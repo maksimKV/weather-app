@@ -50,8 +50,8 @@
   let mapCenter: [number, number] = [20, 0];
   let mapZoom = 2;
   let cityWeather: Record<string, { temperature: number; icon: string }> = {};
-  let forecast = null;
-  let locationForecast = null;
+  let forecast: any = null;
+  let locationForecast: any = null;
   let locationName = '';
   let locationCountry = '';
   let locationError = ''; // Add this to track geolocation errors
@@ -212,54 +212,41 @@
     cityManuallySelected = true;
   }
 
-  // Geolocation for user forecast
+  // IP-based geolocation for user forecast
   async function detectLocation() {
     loadingLocationForecast = true;
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          locationForecast = await fetchForecast(latitude, longitude);
-          
-          // Try to find city name and country
-          const city = $cities.find(c => Math.abs(c.lat - latitude) < 0.5 && Math.abs((c.lng || c.lon) - longitude) < 0.5);
-          locationName = city ? city.name : 'Your Location';
-          locationCountry = city ? ($countries.find(cn => cn.countryCode === city.countryCode)?.countryName || '') : '';
-        } catch (error) {
-          console.error('Error loading location forecast:', error);
-          locationForecast = null;
-          locationName = 'Location unavailable';
-          locationCountry = '';
-          locationError = error?.message || 'An error occurred';
-        }
-        loadingLocationForecast = false;
-      }, async (error) => {
-        console.log('Geolocation failed, skipping location detection:', error, error?.message, error?.code);
-        loadingLocationForecast = false;
+    locationError = ''; // Clear any previous errors
+    
+    try {
+      console.log('🌐 Fetching IP-based location...');
+      const response = await fetch('https://ipapi.co/json/');
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('🌐 IP location data:', data);
         
-        // Set user-friendly error message based on error code
-        switch (error?.code) {
-          case 1:
-            locationError = 'Location access denied. Please allow location access in your browser settings.';
-            break;
-          case 2:
-            locationError = 'Location information unavailable. Please try again or check your internet connection.';
-            break;
-          case 3:
-            locationError = 'Location request timed out. Please try again.';
-            break;
-          default:
-            locationError = 'Unable to get your location. Please try selecting a city manually.';
+        if (data.latitude && data.longitude) {
+          console.log('🌤️ Fetching weather for IP-based coordinates:', { latitude: data.latitude, longitude: data.longitude });
+          locationForecast = await fetchForecast(data.latitude, data.longitude);
+          
+          locationName = data.city || 'Your Location (Approximate)';
+          locationCountry = data.country_name || '';
+          console.log('📍 IP-based location set:', locationName, locationCountry);
+        } else {
+          throw new Error('No coordinates in IP response');
         }
-      }, {
-        timeout: 10000,
-        enableHighAccuracy: false
-      });
-    } else {
-      console.log('Geolocation not supported, skipping location detection');
-      loadingLocationForecast = false;
-      locationError = 'Geolocation not supported';
+      } else {
+        throw new Error(`IP API responded with status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('IP geolocation failed:', error);
+      locationForecast = null;
+      locationName = 'Location unavailable';
+      locationCountry = '';
+      locationError = 'Unable to determine your location. Please select a city manually.';
     }
+    
+    loadingLocationForecast = false;
   }
 
   onMount(() => {
@@ -292,20 +279,49 @@
 
   function clearCache() {
     localStorage.clear();
-    if (weatherCacheStore && weatherCacheStore.clear) {
-      weatherCacheStore.clear();
-    }
     location.reload();
+  }
+
+  function testGeolocation() {
+    console.log('🧪 Testing IP-based geolocation...');
+    console.log('🌐 Testing IP location service...');
+    
+    // Test the IP geolocation service directly
+    fetch('https://ipapi.co/json/')
+      .then(response => {
+        console.log('📡 IP API Response status:', response.status);
+        return response.json();
+      })
+      .then(data => {
+        console.log('✅ IP Geolocation SUCCESS!');
+        console.log('🌐 IP location data:', data);
+        console.log('🌍 Coordinates:', { lat: data.latitude, lng: data.longitude });
+        console.log('🏙️ City:', data.city);
+        console.log('🌍 Country:', data.country_name);
+        console.log('🌐 IP Address:', data.ip);
+      })
+      .catch(error => {
+        console.log('❌ IP Geolocation FAILED!');
+        console.log('🚨 Error:', error);
+        console.log('💡 Possible causes:');
+        console.log('   - No internet connection');
+        console.log('   - IP geolocation service is down');
+        console.log('   - Network restrictions');
+      });
   }
 </script>
 
 <main>
   <h1 in:fly={{ y: -40, duration: 400 }}>Weather App</h1>
-  <button style="margin: 1em auto; display: block;" on:click={clearCache}>Clear Cache</button>
+  <div style="display: flex; gap: 1em; justify-content: center; margin: 1em 0;">
+    <button on:click={clearCache}>Clear Cache</button>
+    <button on:click={testGeolocation}>Test Geolocation</button>
+    <button on:click={() => detectLocation()}>Retry Location</button>
+  </div>
   
   <div class="selectors" in:fade>
-    <CountrySelector {selectedCountry} on:select={handleCountrySelect} />
-    <CitySelector key={selectedCity?.name || 'no-city'} {selectedCity} country={selectedCountry?.code || null} clearTrigger={clearCityInput} on:select={handleCitySelect} />
+    <CountrySelector selected={selectedCountry} on:select={handleCountrySelect} />
+    <CitySelector selected={selectedCity} country={selectedCountry?.code || null} clearTrigger={clearCityInput} on:select={handleCitySelect} />
   </div>
   
   {#if $countryCityError}
@@ -360,7 +376,9 @@
     {:else if locationError}
       <div class="error-message" in:fade>
         <p>⚠️ {locationError}</p>
-        <p class="error-help">You can still select cities and countries manually to get weather information.</p>
+        <p class="error-help">
+          💡 Unable to determine your location automatically. You can still select cities and countries manually to get weather information.
+        </p>
       </div>
     {/if}
   </div>
@@ -452,5 +470,17 @@ h1 {
 .error-help {
   font-size: 0.9em;
   color: #666 !important;
+  text-align: left;
+  margin-top: 1em;
+}
+
+.error-help ul {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.error-help li {
+  margin: 0.3em 0;
+  line-height: 1.4;
 }
 </style>
