@@ -34,8 +34,8 @@
           <div>{new Date(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</div>
           <img class="big-weather-icon" src={icons[forecast.daily.weathercode[i]] || icons[0]} alt="icon" width="56" height="56" />
           <div class="temps">
-            <span>{forecast.daily.temperature_2m_max[i]}°C</span>
-            <span>{forecast.daily.temperature_2m_min[i]}°C</span>
+            <span class="min-temp"><img src="/weather-icons/min-temp.svg" alt="" width="18" height="18" /> {forecast.daily.temperature_2m_min[i]}°C</span>
+            <span class="max-temp"><img src="/weather-icons/clear-day.svg" alt="" width="18" height="18" /> {forecast.daily.temperature_2m_max[i]}°C</span>
           </div>
         </div>
       {/each}
@@ -94,4 +94,7 @@
   display: flex;
   gap: 0.5em;
 }
+.min-temp img, .max-temp img { vertical-align: middle; margin-right: 0.2em; }
+.min-temp { color: #2196f3; font-weight: 500; }
+.max-temp { color: #f44336; font-weight: 500; }
 </style> 
