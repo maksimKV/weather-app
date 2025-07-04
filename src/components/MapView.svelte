@@ -54,7 +54,7 @@
       style: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
       center: [center[1], center[0]],
       zoom,
-      attributionControl: true
+      attributionControl: { compact: true }
     });
     map.on('load', addMarkers);
     return () => {
@@ -68,7 +68,14 @@
   $: if (map && selectedCity) {
     map.flyTo({ center: [selectedCity.lon, selectedCity.lat], zoom: 8 });
   } else if (map && cities.length) {
-    map.flyTo({ center: [cities[0].lon, cities[0].lat], zoom: 5 });
+    // Fit map to all city markers (country)
+    const bounds = new maplibregl.LngLatBounds();
+    for (const city of cities) {
+      bounds.extend([city.lon, city.lat]);
+    }
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds, { padding: 60, duration: 800 });
+    }
   }
 </script>
 
