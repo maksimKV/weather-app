@@ -9,6 +9,7 @@
   let search = '';
   let filtered: City[] = [];
   const dispatch = createEventDispatcher();
+  let dropdownOpen = false;
 
   $: filtered = cities.filter(c =>
     (!country || c.country === country) &&
@@ -18,6 +19,7 @@
   function selectCity(city: City) {
     dispatch('select', city);
     search = city.name;
+    dropdownOpen = false;
   }
 
   onMount(() => {
@@ -26,8 +28,12 @@
 </script>
 
 <div class="city-selector">
-  <input type="text" placeholder="Select city..." bind:value={search} />
-  {#if search && filtered.length}
+  <input type="text" placeholder="Select city..." bind:value={search} 
+    on:focus={() => dropdownOpen = true}
+    on:input={() => dropdownOpen = true}
+    on:blur={() => setTimeout(() => dropdownOpen = false, 100)}
+  />
+  {#if dropdownOpen && search && filtered.length}
     <ul>
       {#each filtered as city}
         <button type="button" on:click={() => selectCity(city)}>{city.name}</button>

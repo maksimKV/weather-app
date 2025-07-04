@@ -8,6 +8,7 @@
   let search = '';
   let filtered = countries;
   const dispatch = createEventDispatcher();
+  let dropdownOpen = false;
 
   $: filtered = countries.filter(c => c.name.toLowerCase().includes(search.toLowerCase()));
 
@@ -15,6 +16,7 @@
     console.log('Country selected in CountrySelector:', country);
     dispatch('select', country);
     search = country.name;
+    dropdownOpen = false;
   }
 
   onMount(() => {
@@ -23,8 +25,12 @@
 </script>
 
 <div class="country-selector">
-  <input type="text" placeholder="Select country..." bind:value={search} />
-  {#if search && filtered.length}
+  <input type="text" placeholder="Select country..." bind:value={search} 
+    on:focus={() => dropdownOpen = true}
+    on:input={() => dropdownOpen = true}
+    on:blur={() => setTimeout(() => dropdownOpen = false, 100)}
+  />
+  {#if dropdownOpen && search && filtered.length}
     <ul>
       {#each filtered as country}
         <button type="button" on:click={() => selectCountry(country)}>{country.name}</button>
