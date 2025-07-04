@@ -206,8 +206,9 @@
     console.log('=== handleCitySelect CALLED ===', selectedCityData);
     appStore.setCity(selectedCityData);
     
-    // Don't clear the country when a city is selected
-    // This allows the map to show the city in context
+    // Clear the country when a city is selected
+    // This allows independent city selection
+    appStore.setCountry(null);
     
     cityManuallySelected = true;
   }
@@ -343,6 +344,7 @@
       weatherByCity={cityWeather}
       onMarkerClick={(city) => {
         appStore.setCity(city);
+        appStore.setCountry(null); // Clear country when city is selected via map
         cityManuallySelected = true;
       }}
     />

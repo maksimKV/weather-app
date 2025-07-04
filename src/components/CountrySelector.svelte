@@ -20,6 +20,10 @@
   onMount(() => {
     if (selected) search = selected.name;
   });
+
+  $: if (selected === null) {
+    search = '';
+  }
 </script>
 
 <div class="country-selector">
