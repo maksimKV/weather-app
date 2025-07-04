@@ -53,6 +53,7 @@
   let forecast = null;
   let locationForecast = null;
   let locationName = '';
+  let locationCountry = '';
   let loadingCities = false;
   let loadingForecast = false;
 
@@ -130,15 +131,17 @@
       navigator.geolocation.getCurrentPosition(async (pos) => {
         const { latitude, longitude } = pos.coords;
         locationForecast = await fetchForecast(latitude, longitude);
-        // Try to find city name
+        // Try to find city name and country
         const city = cities.find(c => Math.abs(c.lat - latitude) < 0.5 && Math.abs(c.lon - longitude) < 0.5);
         locationName = city ? city.name : 'Your Location';
+        locationCountry = city ? (countries.find(cn => cn.code === city.country)?.name || '') : '';
       }, async () => {
         // Fallback: use IP geolocation
         const res = await fetch('https://ipapi.co/json/');
         const data = await res.json();
         locationForecast = await fetchForecast(data.latitude, data.longitude);
         locationName = data.city || 'Your Location';
+        locationCountry = data.country_name || '';
       });
     }
   }
@@ -190,7 +193,7 @@
       <ForecastPanel {forecast} icons={iconMap} />
     {/if}
     {#if locationForecast}
-      <LocationForecastCard forecast={locationForecast} location={locationName} icons={iconMap} />
+      <LocationForecastCard forecast={locationForecast} location={locationName} country={locationCountry} icons={iconMap} />
     {/if}
   </div>
 </main>

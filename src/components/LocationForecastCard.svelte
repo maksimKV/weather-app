@@ -2,19 +2,40 @@
   export let forecast: any = null;
   export let location: string = '';
   export let icons: Record<number, string> = {};
+  export let country: string = '';
+
+  let daysToShow = 10;
+
+  function updateDaysToShow() {
+    if (window.innerWidth < 500) daysToShow = 4;
+    else if (window.innerWidth < 700) daysToShow = 6;
+    else if (window.innerWidth < 900) daysToShow = 8;
+    else daysToShow = 10;
+  }
+
+  if (typeof window !== 'undefined') {
+    updateDaysToShow();
+    window.addEventListener('resize', updateDaysToShow);
+  }
 </script>
 
 {#if forecast}
   <div class="location-forecast">
-    <h3>Weather in {location}</h3>
+    <div class="location-heading">
+      <span class="location-label">Your Current Location:</span>
+      <span class="location-city">{location}</span>
+      {#if country}
+        <span class="location-country">, {country}</span>
+      {/if}
+    </div>
     <div class="forecast-panel">
-      {#each forecast.daily.time as date, i}
+      {#each forecast.daily.time.slice(0, daysToShow) as date, i}
         <div class="day">
           <div>{new Date(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</div>
-          <img src={icons[forecast.daily.weathercode[i]] || icons[0]} alt="icon" width="32" height="32" />
+          <img class="big-weather-icon" src={icons[forecast.daily.weathercode[i]] || icons[0]} alt="icon" width="56" height="56" />
           <div class="temps">
-            <span>{forecast.daily.temperature_2m_max[i]}°</span>
-            <span>{forecast.daily.temperature_2m_min[i]}°</span>
+            <span>{forecast.daily.temperature_2m_max[i]}°C</span>
+            <span>{forecast.daily.temperature_2m_min[i]}°C</span>
           </div>
         </div>
       {/each}
@@ -30,6 +51,25 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   padding: 1em;
 }
+.location-heading {
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: 600;
+  margin-bottom: 0.5em;
+  color: var(--primary);
+}
+.location-label {
+  font-weight: 400;
+  color: #555;
+}
+.location-city {
+  font-weight: 700;
+  color: var(--primary);
+}
+.location-country {
+  font-weight: 400;
+  color: #888;
+}
 .forecast-panel {
   display: flex;
   gap: 1em;
@@ -44,6 +84,11 @@
   flex-direction: column;
   align-items: center;
   min-width: 90px;
+}
+.big-weather-icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 0.5em;
 }
 .temps {
   display: flex;

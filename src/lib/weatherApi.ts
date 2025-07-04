@@ -24,7 +24,7 @@ export async function fetchCurrentWeather(lat: number, lon: number): Promise<Wea
 }
 
 export async function fetchForecast(lat: number, lon: number): Promise<Forecast | null> {
-  const url = `${BASE_URL}?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=auto`;
+  const url = `${BASE_URL}?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&forecast_days=16&timezone=auto`;
   const res = await fetch(url);
   if (!res.ok) return null;
   const data = await res.json();
