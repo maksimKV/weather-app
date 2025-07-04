@@ -16,25 +16,25 @@ export default [
       'static/',
       'dist/',
       'coverage/',
-      '*.min.js'
+      '*.min.js',
     ],
     languageOptions: {
       parser: typescriptParser,
       parserOptions: {
         sourceType: 'module',
         ecmaVersion: 2020,
-        extraFileExtensions: ['.svelte']
+        extraFileExtensions: ['.svelte'],
       },
       globals: {
         browser: true,
         es2017: true,
-        node: true
-      }
+        node: true,
+      },
     },
     plugins: {
       '@typescript-eslint': typescript,
       svelte: svelte,
-      prettier: prettier
+      prettier: prettier,
     },
     rules: {
       ...typescript.configs.recommended.rules,
@@ -49,16 +49,16 @@ export default [
       'no-console': 'warn',
       'prefer-const': 'error',
       'no-var': 'error',
-      'svelte/valid-compile': 'error'
-    }
+      'svelte/valid-compile': 'error',
+    },
   },
   {
     files: ['**/*.svelte'],
     languageOptions: {
       parser: svelte.parser,
       parserOptions: {
-        parser: typescriptParser
-      }
-    }
-  }
-]; 
+        parser: typescriptParser,
+      },
+    },
+  },
+];

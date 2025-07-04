@@ -4,28 +4,28 @@ module.exports = {
     'eslint:recommended',
     '@typescript-eslint/recommended',
     'plugin:svelte/recommended',
-    'prettier'
+    'prettier',
   ],
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint', 'svelte', 'prettier'],
   parserOptions: {
     sourceType: 'module',
     ecmaVersion: 2020,
-    extraFileExtensions: ['.svelte']
+    extraFileExtensions: ['.svelte'],
   },
   env: {
     browser: true,
     es2017: true,
-    node: true
+    node: true,
   },
   overrides: [
     {
       files: ['*.svelte'],
       parser: 'svelte-eslint-parser',
       parserOptions: {
-        parser: '@typescript-eslint/parser'
-      }
-    }
+        parser: '@typescript-eslint/parser',
+      },
+    },
   ],
   rules: {
     'prettier/prettier': 'error',
@@ -37,9 +37,9 @@ module.exports = {
     'no-console': 'warn',
     'prefer-const': 'error',
     'no-var': 'error',
-    'svelte/valid-compile': 'error'
+    'svelte/valid-compile': 'error',
   },
   settings: {
-    'svelte3/typescript': () => require('typescript')
-  }
-}; 
+    'svelte3/typescript': () => require('typescript'),
+  },
+};
