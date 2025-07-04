@@ -18,15 +18,13 @@
   $: useCache = $citiesLoaded && $cities.length > 1000; // Lowered threshold for better search experience
 
   // On-demand search function
-  async function searchCities(query: string, country: string | null) {
+  async function searchCities(query: string) {
     if (!query || query.length < 2) {
       filtered = [];
       return;
     }
     loading = true;
-    let url = `/api/cities?q=${encodeURIComponent(query)}`;
-    if (country && country !== '') url += `&country=${country}`;
-    url += '&maxRows=50'; // Increased from 20 to get more suggestions
+    let url = `/api/cities?q=${encodeURIComponent(query)}&maxRows=50`; // Increased from 20 to get more suggestions
     try {
       const res = await fetch(url);
       const data = await res.json();
@@ -42,16 +40,14 @@
   $: if (search && search.length >= 2 && search !== lastSearch) {
     lastSearch = search;
     if (useCache) {
-      // Use local cache - if no country selected, search all cities
+      // Use local cache - search all cities regardless of country selection
       const searchLower = search.toLowerCase();
       filtered = $cities.filter(c =>
-        (!country || c.countryCode === country) &&
         c.name && c.name.toLowerCase().startsWith(searchLower)
       ).slice(0, 20);
     } else {
-      // Use API search - if no country selected, don't pass country parameter
-      const searchCountry = country || null;
-      searchCities(search, searchCountry);
+      // Use API search - don't pass country parameter to allow global search
+      searchCities(search);
     }
   } else if (!search || search.length < 2) {
     filtered = [];
