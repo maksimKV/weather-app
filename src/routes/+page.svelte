@@ -46,6 +46,7 @@
 
   let selectedCountry = null;
   let selectedCity = null;
+  let cityManuallySelected = false;
   let mapCenter: [number, number] = [20, 0];
   let mapZoom = 2;
   let cityWeather: Record<string, { temperature: number; icon: string }> = {};
@@ -113,12 +114,14 @@
     appStore.setCity(null);
     forecast = null;
     cityWeather = {};
+    cityManuallySelected = false;
     await tick();
     console.log('After tick, countryCities:', countryCities);
     loadCityWeather();
   }
   function handleCitySelect(e) {
     appStore.setCity(e.detail);
+    cityManuallySelected = true;
   }
 
   // Geolocation for user forecast
@@ -142,6 +145,10 @@
 
   onMount(() => {
     if (selectedCountry && countryCities.length) loadCityWeather();
+    // If no city has been manually selected this session, reset selectedCity to null
+    if (!cityManuallySelected) {
+      appStore.setCity(null);
+    }
     detectLocation();
   });
 
@@ -168,12 +175,18 @@
       zoom={mapZoom}
       selectedCity={selectedCity}
       weatherByCity={cityWeather}
-      onMarkerClick={(city) => appStore.setCity(city)}
+      onMarkerClick={(city) => {
+        appStore.setCity(city);
+        cityManuallySelected = true;
+      }}
     />
   </div>
 
   <div class="forecast-section" in:fade>
-    {#if selectedCity && forecast}
+    {#if selectedCity && forecast && cityManuallySelected}
+      <div class="city-forecast-title">
+        Weather in {selectedCity.name}
+      </div>
       <ForecastPanel {forecast} icons={iconMap} />
     {/if}
     {#if locationForecast}
@@ -217,5 +230,12 @@ h1 {
   main {
     padding: 0.5em;
   }
+}
+.city-forecast-title {
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: 600;
+  margin-bottom: 0.5em;
+  color: var(--primary);
 }
 </style>
