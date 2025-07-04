@@ -9,7 +9,7 @@
   import { cities } from '../lib/cities';
   import { fetchCurrentWeather, fetchForecast } from '../lib/weatherApi';
   import { fly, fade } from 'svelte/transition';
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { get } from 'svelte/store';
 
   // Weather icon mapping (Open-Meteo weather codes to SVGs)
@@ -78,6 +78,7 @@
 
   // Fetch weather for all cities in selected country
   async function loadCityWeather() {
+    console.log('loadCityWeather called, countryCities:', countryCities);
     if (!countryCities.length) return;
     loadingCities = true;
     const results: Record<string, { temperature: number; icon: string }> = {};
@@ -92,6 +93,7 @@
         }
       })
     );
+    console.log('Weather fetch results:', results);
     cityWeather = results;
     loadingCities = false;
   }
@@ -105,13 +107,14 @@
   }
 
   // Handle country/city selection
-  function handleCountrySelect(e) {
-    console.log('handleCountrySelect event:', e);
-    console.log('Country detail:', e.detail);
+  async function handleCountrySelect(e) {
+    console.log('handleCountrySelect', e.detail);
     appStore.setCountry(e.detail);
     appStore.setCity(null);
     forecast = null;
     cityWeather = {};
+    await tick();
+    console.log('After tick, countryCities:', countryCities);
     loadCityWeather();
   }
   function handleCitySelect(e) {
@@ -139,7 +142,7 @@
   }
 
   onMount(() => {
-    if (selectedCountry) loadCityWeather();
+    if (selectedCountry && countryCities.length) loadCityWeather();
     if (selectedCity) loadForecast();
     detectLocation();
   });

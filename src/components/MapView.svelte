@@ -37,9 +37,10 @@
       el.setAttribute('aria-label', `Select city ${city.name}`);
       el.onclick = () => onMarkerClick(city);
       el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') onMarkerClick(city); };
+      const weather = weatherByCity[city.name];
       el.innerHTML = `
         <span>${city.name}</span>
-        ${weatherByCity[city.name] ? `<span>${weatherByCity[city.name].temperature}°C</span><img src="${weatherByCity[city.name].icon}" alt="icon" width="24" height="24" />` : ''}
+        ${weather ? `<span>${weather.temperature}°C</span><img src="${weather.icon}" alt="icon" width="24" height="24" />` : ''}
       `;
       const marker = new maplibregl.Marker({ element: el })
         .setLngLat([city.lon, city.lat])
@@ -56,13 +57,12 @@
       zoom,
       attributionControl: { compact: true }
     });
-    map.on('load', addMarkers);
     return () => {
       map.remove();
     };
   });
 
-  $: if (map && cities.length) {
+  $: if (map && (cities || weatherByCity)) {
     addMarkers();
   }
   $: if (map && selectedCity) {
@@ -74,9 +74,11 @@
       bounds.extend([city.lon, city.lat]);
     }
     if (!bounds.isEmpty()) {
-      map.fitBounds(bounds, { padding: 60, duration: 800 });
+      map.fitBounds(bounds, { padding: 120, duration: 800 });
     }
   }
+
+  $: console.log('MapView weatherByCity:', weatherByCity);
 </script>
 
 <div bind:this={mapContainer} style="height: 400px; width: 100%; border-radius: var(--border-radius);"></div>
