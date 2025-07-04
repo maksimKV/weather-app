@@ -173,7 +173,7 @@
   }
 
   // Reactively load weather for cities when countryCities changes
-  $: if (countryCities.length > 0 && $selectedCountry) {
+  $: if (countryCities.length > 0) {
     loadCityWeather();
   }
 

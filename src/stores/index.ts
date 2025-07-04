@@ -13,6 +13,7 @@ export interface Country {
   countryCode: string;
   countryName: string;
   population?: string;
+  code?: string; // Alternative field name from API
 }
 
 export interface City {
@@ -105,7 +106,13 @@ export const citiesOfSelectedCountry = derived(
   [cities, selectedCountry],
   ([$cities, $selectedCountry]) => {
     if (!$selectedCountry) return [];
-    return $cities.filter(city => city.countryCode === $selectedCountry.countryCode);
+    
+    // Filter cities by country code - handle both possible field structures
+    return $cities.filter(city => {
+      const cityCountryCode = city.countryCode || city.country;
+      const selectedCountryCode = $selectedCountry.countryCode || $selectedCountry.code;
+      return cityCountryCode === selectedCountryCode;
+    });
   }
 );
 
