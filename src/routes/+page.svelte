@@ -119,7 +119,6 @@
   }
   function handleCitySelect(e) {
     appStore.setCity(e.detail);
-    loadForecast();
   }
 
   // Geolocation for user forecast
@@ -143,9 +142,13 @@
 
   onMount(() => {
     if (selectedCountry && countryCities.length) loadCityWeather();
-    if (selectedCity) loadForecast();
     detectLocation();
   });
+
+  // Reactively load forecast when selectedCity changes
+  $: if (selectedCity) {
+    loadForecast();
+  }
 </script>
 
 <main>
