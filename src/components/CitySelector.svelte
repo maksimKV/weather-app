@@ -89,8 +89,6 @@
   }
 
 
-
-
 </script>
 
 <div class="city-selector">

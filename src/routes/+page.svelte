@@ -101,33 +101,25 @@
 
   // Fetch weather for all cities in selected country
   async function loadCityWeather() {
-    console.log('loadCityWeather called, countryCities:', countryCities);
     if (!countryCities.length) {
-      console.log('No cities to load weather for');
       return;
     }
     loadingCities = true;
     const results: Record<string, { temperature: number; icon: string }> = {};
-    console.log('Starting weather fetch for', countryCities.length, 'cities');
     
     // Process cities sequentially with delays to avoid rate limiting
     for (const city of countryCities) {
-      console.log('Fetching weather for:', city.name);
       const weather = await getCurrentWeatherWithCache(city);
       if (weather) {
         results[city.name] = {
           temperature: Math.round(weather.temperature),
           icon: iconMap[weather.weathercode] || iconMap[0],
         };
-        console.log('Weather for', city.name, ':', results[city.name]);
-      } else {
-        console.log('No weather data for:', city.name);
       }
       // Add a small delay between requests to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 100));
     }
     
-    console.log('Weather fetch results:', results);
     cityWeather = results;
     loadingCities = false;
   }
@@ -135,7 +127,6 @@
   // Fetch weather for selected city
   async function loadSelectedCityWeather() {
     if (!selectedCity) return;
-    console.log('Loading weather for selected city:', selectedCity.name);
     
     const weather = await getCurrentWeatherWithCache(selectedCity);
     if (weather) {
@@ -146,29 +137,16 @@
           icon: iconMap[weather.weathercode] || iconMap[0],
         }
       };
-      console.log('Weather loaded for selected city:', selectedCity.name, cityWeather[selectedCity.name]);
-    } else {
-      console.log('No weather data for selected city:', selectedCity.name);
     }
   }
 
   // Fetch forecast for selected city
   async function loadForecast() {
     if (!selectedCity) return;
-    console.log('Loading forecast for city:', selectedCity);
     loadingForecast = true;
     
-    console.log('Fetching forecast for city:', selectedCity.name);
     try {
       forecast = await getForecastWithCache(selectedCity);
-      console.log('Forecast loaded:', forecast);
-      console.log('Forecast structure:', {
-        hasDaily: !!forecast?.daily,
-        timeLength: forecast?.daily?.time?.length,
-        tempMaxLength: forecast?.daily?.temperature_2m_max?.length,
-        tempMinLength: forecast?.daily?.temperature_2m_min?.length,
-        weathercodeLength: forecast?.daily?.weathercode?.length
-      });
     } catch (error) {
       console.error('Error loading forecast:', error);
       forecast = null;
@@ -203,7 +181,6 @@
   }
   function handleCitySelect(e) {
     const selectedCityData = e.detail;
-    console.log('=== handleCitySelect CALLED ===', selectedCityData);
     appStore.setCity(selectedCityData);
     
     // Clear the country when a city is selected
@@ -219,20 +196,16 @@
     locationError = ''; // Clear any previous errors
     
     try {
-      console.log('🌐 Fetching IP-based location...');
       const response = await fetch('https://ipapi.co/json/');
       
       if (response.ok) {
         const data = await response.json();
-        console.log('🌐 IP location data:', data);
         
         if (data.latitude && data.longitude) {
-          console.log('🌤️ Fetching weather for IP-based coordinates:', { latitude: data.latitude, longitude: data.longitude });
           locationForecast = await fetchForecast(data.latitude, data.longitude);
           
           locationName = data.city || 'Your Location (Approximate)';
           locationCountry = data.country_name || '';
-          console.log('📍 IP-based location set:', locationName, locationCountry);
         } else {
           throw new Error('No coordinates in IP response');
         }
@@ -283,41 +256,13 @@
     location.reload();
   }
 
-  function testGeolocation() {
-    console.log('🧪 Testing IP-based geolocation...');
-    console.log('🌐 Testing IP location service...');
-    
-    // Test the IP geolocation service directly
-    fetch('https://ipapi.co/json/')
-      .then(response => {
-        console.log('📡 IP API Response status:', response.status);
-        return response.json();
-      })
-      .then(data => {
-        console.log('✅ IP Geolocation SUCCESS!');
-        console.log('🌐 IP location data:', data);
-        console.log('🌍 Coordinates:', { lat: data.latitude, lng: data.longitude });
-        console.log('🏙️ City:', data.city);
-        console.log('🌍 Country:', data.country_name);
-        console.log('🌐 IP Address:', data.ip);
-      })
-      .catch(error => {
-        console.log('❌ IP Geolocation FAILED!');
-        console.log('🚨 Error:', error);
-        console.log('💡 Possible causes:');
-        console.log('   - No internet connection');
-        console.log('   - IP geolocation service is down');
-        console.log('   - Network restrictions');
-      });
-  }
+
 </script>
 
 <main>
   <h1 in:fly={{ y: -40, duration: 400 }}>Weather App</h1>
   <div style="display: flex; gap: 1em; justify-content: center; margin: 1em 0;">
     <button on:click={clearCache}>Clear Cache</button>
-    <button on:click={testGeolocation}>Test Geolocation</button>
-    <button on:click={() => detectLocation()}>Retry Location</button>
   </div>
   
   <div class="selectors" in:fade>
