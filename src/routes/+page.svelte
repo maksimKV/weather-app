@@ -6,10 +6,11 @@
   import LocationForecastCard from '../components/LocationForecastCard.svelte';
   import { appStore } from '../stores/appStore';
   import { countries, cities, countryCityError, fetchCitiesForCountry } from '../stores/countryCityStore';
-  import { fetchCurrentWeather, fetchForecast } from '../lib/weatherApi';
+  import { fetchCurrentWeather, fetchForecast, getCurrentWeatherWithCache, getForecastWithCache } from '../lib/weatherApi';
   import { fly, fade } from 'svelte/transition';
   import { onMount, tick } from 'svelte';
   import { get } from 'svelte/store';
+  import { weatherCacheStore } from '../stores/weatherCacheStore';
 
   // Weather icon mapping (Open-Meteo weather codes to SVGs)
   const iconMap: Record<number, string> = {
@@ -53,29 +54,41 @@
   let locationForecast = null;
   let locationName = '';
   let locationCountry = '';
+  let locationError = ''; // Add this to track geolocation errors
   let loadingCities = false;
   let loadingForecast = false;
   let loadingLocationForecast = false;
   let fetchingAdditionalCities = false;
+  let clearCityInput = 0; // Counter to force CitySelector to clear
 
   // Subscribe to store
   $: appState = $appStore;
   $: selectedCountry = appState.selectedCountry;
   $: selectedCity = appState.selectedCity;
-  $: console.log('Data check:', { 
-    countriesCount: $countries.length, 
-    citiesCount: $cities.length,
-    countriesLoaded: $countries.length > 0,
-    citiesLoaded: $cities.length > 0,
-    error: $countryCityError
-  });
 
-  // Filter cities for selected country
-  $: countryCities = selectedCountry ? $cities.filter(c => c.countryCode === selectedCountry.code) : [];
+  // Function to determine city limit based on country size
+  function getCityLimit(country: any): number {
+    if (!country || !country.population) return 10; // Default fallback
+    
+    const population = parseInt(country.population);
+    
+    if (population > 100000000) return 25; // Very large countries (China, India, etc.)
+    if (population > 50000000) return 20;  // Large countries (US, Brazil, etc.)
+    if (population > 20000000) return 15;  // Medium-large countries
+    if (population > 10000000) return 12;  // Medium countries
+    if (population > 5000000) return 10;   // Small-medium countries
+    if (population > 1000000) return 8;    // Small countries
+    return 5; // Very small countries
+  }
+
+  // Filter cities for selected country (for map display)
+  $: countryCities = selectedCountry ? 
+    $cities.filter(c => c.countryCode === selectedCountry.code).slice(0, getCityLimit(selectedCountry)) : 
+    selectedCity ? [selectedCity] : [];
 
   // Set map center on country/city change
   $: if (selectedCity) {
-    mapCenter = [selectedCity.lat, selectedCity.lon];
+    mapCenter = [selectedCity.lat, selectedCity.lon ?? selectedCity.lng];
     mapZoom = 7;
   } else if (selectedCountry && countryCities.length) {
     // Center on first city in country
@@ -96,65 +109,106 @@
     loadingCities = true;
     const results: Record<string, { temperature: number; icon: string }> = {};
     console.log('Starting weather fetch for', countryCities.length, 'cities');
-    await Promise.all(
-      countryCities.map(async (city) => {
-        console.log('Fetching weather for:', city.name);
-        const weather = await fetchCurrentWeather(city.lat, city.lng);
-        if (weather) {
-          results[city.name] = {
-            temperature: Math.round(weather.temperature),
-            icon: iconMap[weather.weathercode] || iconMap[0],
-          };
-          console.log('Weather for', city.name, ':', results[city.name]);
-        } else {
-          console.log('No weather data for:', city.name);
-        }
-      })
-    );
+    
+    // Process cities sequentially with delays to avoid rate limiting
+    for (const city of countryCities) {
+      console.log('Fetching weather for:', city.name);
+      const weather = await getCurrentWeatherWithCache(city);
+      if (weather) {
+        results[city.name] = {
+          temperature: Math.round(weather.temperature),
+          icon: iconMap[weather.weathercode] || iconMap[0],
+        };
+        console.log('Weather for', city.name, ':', results[city.name]);
+      } else {
+        console.log('No weather data for:', city.name);
+      }
+      // Add a small delay between requests to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
     console.log('Weather fetch results:', results);
     cityWeather = results;
     loadingCities = false;
   }
 
+  // Fetch weather for selected city
+  async function loadSelectedCityWeather() {
+    if (!selectedCity) return;
+    console.log('Loading weather for selected city:', selectedCity.name);
+    
+    const weather = await getCurrentWeatherWithCache(selectedCity);
+    if (weather) {
+      cityWeather = {
+        ...cityWeather,
+        [selectedCity.name]: {
+          temperature: Math.round(weather.temperature),
+          icon: iconMap[weather.weathercode] || iconMap[0],
+        }
+      };
+      console.log('Weather loaded for selected city:', selectedCity.name, cityWeather[selectedCity.name]);
+    } else {
+      console.log('No weather data for selected city:', selectedCity.name);
+    }
+  }
+
   // Fetch forecast for selected city
   async function loadForecast() {
     if (!selectedCity) return;
+    console.log('Loading forecast for city:', selectedCity);
     loadingForecast = true;
-    forecast = await fetchForecast(selectedCity.lat, selectedCity.lon);
+    
+    console.log('Fetching forecast for city:', selectedCity.name);
+    try {
+      forecast = await getForecastWithCache(selectedCity);
+      console.log('Forecast loaded:', forecast);
+      console.log('Forecast structure:', {
+        hasDaily: !!forecast?.daily,
+        timeLength: forecast?.daily?.time?.length,
+        tempMaxLength: forecast?.daily?.temperature_2m_max?.length,
+        tempMinLength: forecast?.daily?.temperature_2m_min?.length,
+        weathercodeLength: forecast?.daily?.weathercode?.length
+      });
+    } catch (error) {
+      console.error('Error loading forecast:', error);
+      forecast = null;
+    }
     loadingForecast = false;
   }
 
   // Handle country/city selection
   async function handleCountrySelect(e) {
-    console.log('=== handleCountrySelect CALLED ===', e.detail);
     appStore.setCountry(e.detail);
     appStore.setCity(null);
     forecast = null;
     cityWeather = {};
     cityManuallySelected = false;
+    
+    // Increment the clear counter to trigger CitySelector to clear
+    clearCityInput++;
+    
     await tick();
-    console.log('After tick, countryCities:', countryCities);
-    console.log('Cities loaded:', $cities.length);
     
     // If no cities found for this country, fetch additional cities
     if (countryCities.length === 0 && !fetchingAdditionalCities) {
-      console.log('No cities found for', e.detail.name, '- fetching additional cities');
       fetchingAdditionalCities = true;
       await fetchCitiesForCountry(e.detail.code);
       await tick(); // Wait for cities to update
-      console.log('After fetching additional cities, countryCities:', countryCities);
     }
     
     // Load weather for cities
     if (countryCities.length > 0) {
-      console.log('Loading weather for', countryCities.length, 'cities');
       loadCityWeather();
-    } else {
-      console.log('Still no cities found after fetching additional cities');
     }
   }
   function handleCitySelect(e) {
-    appStore.setCity(e.detail);
+    const selectedCityData = e.detail;
+    console.log('=== handleCitySelect CALLED ===', selectedCityData);
+    appStore.setCity(selectedCityData);
+    
+    // Don't clear the country when a city is selected
+    // This allows the map to show the city in context
+    
     cityManuallySelected = true;
   }
 
@@ -164,23 +218,47 @@
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(async (pos) => {
         const { latitude, longitude } = pos.coords;
-        locationForecast = await fetchForecast(latitude, longitude);
-        // Try to find city name and country
-        const city = $cities.find(c => Math.abs(c.lat - latitude) < 0.5 && Math.abs((c.lng || c.lon) - longitude) < 0.5);
-        locationName = city ? city.name : 'Your Location';
-        locationCountry = city ? ($countries.find(cn => cn.countryCode === city.countryCode)?.countryName || '') : '';
+        try {
+          locationForecast = await fetchForecast(latitude, longitude);
+          
+          // Try to find city name and country
+          const city = $cities.find(c => Math.abs(c.lat - latitude) < 0.5 && Math.abs((c.lng || c.lon) - longitude) < 0.5);
+          locationName = city ? city.name : 'Your Location';
+          locationCountry = city ? ($countries.find(cn => cn.countryCode === city.countryCode)?.countryName || '') : '';
+        } catch (error) {
+          console.error('Error loading location forecast:', error);
+          locationForecast = null;
+          locationName = 'Location unavailable';
+          locationCountry = '';
+          locationError = error?.message || 'An error occurred';
+        }
         loadingLocationForecast = false;
-      }, async () => {
-        // Fallback: use IP geolocation
-        const res = await fetch('https://ipapi.co/json/');
-        const data = await res.json();
-        locationForecast = await fetchForecast(data.latitude, data.longitude);
-        locationName = data.city || 'Your Location';
-        locationCountry = data.country_name || '';
+      }, async (error) => {
+        console.log('Geolocation failed, skipping location detection:', error, error?.message, error?.code);
         loadingLocationForecast = false;
+        
+        // Set user-friendly error message based on error code
+        switch (error?.code) {
+          case 1:
+            locationError = 'Location access denied. Please allow location access in your browser settings.';
+            break;
+          case 2:
+            locationError = 'Location information unavailable. Please try again or check your internet connection.';
+            break;
+          case 3:
+            locationError = 'Location request timed out. Please try again.';
+            break;
+          default:
+            locationError = 'Unable to get your location. Please try selecting a city manually.';
+        }
+      }, {
+        timeout: 10000,
+        enableHighAccuracy: false
       });
     } else {
+      console.log('Geolocation not supported, skipping location detection');
       loadingLocationForecast = false;
+      locationError = 'Geolocation not supported';
     }
   }
 
@@ -190,25 +268,44 @@
     if (!cityManuallySelected) {
       appStore.setCity(null);
     }
-    detectLocation();
+    // Add a small delay to ensure cities are loaded before geolocation
+    setTimeout(() => {
+      detectLocation();
+    }, 500);
   });
 
   // Reactively load forecast when selectedCity changes
   $: if (selectedCity) {
+    loadSelectedCityWeather();
     loadForecast();
+  }
+
+  // Reactively load weather for cities when countryCities changes
+  $: if (countryCities.length > 0 && selectedCountry) {
+    loadCityWeather();
   }
 
   // Reset fetching flag when cities are updated
   $: if ($cities.length > 0) {
     fetchingAdditionalCities = false;
   }
+
+  function clearCache() {
+    localStorage.clear();
+    if (weatherCacheStore && weatherCacheStore.clear) {
+      weatherCacheStore.clear();
+    }
+    location.reload();
+  }
 </script>
 
 <main>
   <h1 in:fly={{ y: -40, duration: 400 }}>Weather App</h1>
+  <button style="margin: 1em auto; display: block;" on:click={clearCache}>Clear Cache</button>
+  
   <div class="selectors" in:fade>
     <CountrySelector {selectedCountry} on:select={handleCountrySelect} />
-    <CitySelector {selectedCity} country={selectedCountry?.code} on:select={handleCitySelect} />
+    <CitySelector key={selectedCity?.name || 'no-city'} {selectedCity} country={selectedCountry?.code || null} clearTrigger={clearCityInput} on:select={handleCitySelect} />
   </div>
   
   {#if $countryCityError}
@@ -247,6 +344,10 @@
           Weather in {selectedCity.name}
         </div>
         <ForecastPanel {forecast} icons={iconMap} />
+      {:else}
+        <div class="loading-message">
+          <p>No forecast data available for {selectedCity.name}</p>
+        </div>
       {/if}
     {/if}
     {#if loadingLocationForecast}
@@ -256,6 +357,11 @@
       </div>
     {:else if locationForecast}
       <LocationForecastCard forecast={locationForecast} location={locationName} country={locationCountry} icons={iconMap} />
+    {:else if locationError}
+      <div class="error-message" in:fade>
+        <p>⚠️ {locationError}</p>
+        <p class="error-help">You can still select cities and countries manually to get weather information.</p>
+      </div>
     {/if}
   </div>
 </main>

@@ -12,10 +12,11 @@ export async function GET({ url }) {
   
   const q = url.searchParams.get('q');
   const country = url.searchParams.get('country'); // ISO country code
-  const maxRows = url.searchParams.get('maxRows') || '10';
+  const maxRows = url.searchParams.get('maxRows') || '1000';
+  const startRow = url.searchParams.get('startRow') || '0';
 
   try {
-    let apiUrl = `http://api.geonames.org/searchJSON?featureClass=P&maxRows=${maxRows}&username=${username}`;
+    let apiUrl = `http://api.geonames.org/searchJSON?featureClass=P&maxRows=${maxRows}&startRow=${startRow}&username=${username}`;
     if (q) apiUrl += `&name_startsWith=${encodeURIComponent(q)}`;
     if (country) apiUrl += `&country=${encodeURIComponent(country)}`;
 

@@ -31,8 +31,8 @@ function createAppStore() {
     subscribe,
     set,
     update,
-    setCountry: (country: Country) => update((s) => ({ ...s, selectedCountry: country })),
-    setCity: (city: City) => update((s) => ({ ...s, selectedCity: city })),
+    setCountry: (country: Country | null) => update((s) => ({ ...s, selectedCountry: country })),
+    setCity: (city: City | null) => update((s) => ({ ...s, selectedCity: city })),
     setWeather: (weather: any) => update((s) => ({ ...s, weather })),
   };
 }

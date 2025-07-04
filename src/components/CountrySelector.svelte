@@ -5,13 +5,13 @@
 
   export let selected: { code: string; name: string } | null = null;
   let search = '';
-  let filtered: { code: string; name: string }[] = [];
+  let filtered: { countryCode: string; countryName: string; population?: string }[] = [];
   const dispatch = createEventDispatcher();
   let dropdownOpen = false;
 
-  $: filtered = $countries.filter(c => c.countryName && c.countryName.toLowerCase().includes(search.toLowerCase()));
+  $: filtered = $countries.filter(c => c.countryName && c.countryName.toLowerCase().startsWith(search.toLowerCase()));
 
-  function selectCountry(country: any) {
+  function selectCountry(country: { countryCode: string; countryName: string; population?: string }) {
     dispatch('select', { code: country.countryCode, name: country.countryName });
     search = country.countryName;
     dropdownOpen = false;
@@ -26,7 +26,7 @@
   <input type="text" placeholder="Select country..." bind:value={search} 
     on:focus={() => dropdownOpen = true}
     on:input={() => dropdownOpen = true}
-    on:blur={() => setTimeout(() => dropdownOpen = false, 100)}
+    on:blur={() => setTimeout(() => dropdownOpen = false, 200)}
     disabled={!$countriesLoaded}
   />
   {#if !$countriesLoaded}
@@ -34,7 +34,7 @@
   {:else if dropdownOpen}
     <ul>
       {#each filtered as country}
-        <button type="button" on:click={() => selectCountry(country)}>{country.countryName}</button>
+        <button type="button" on:mousedown={() => selectCountry(country)}>{country.countryName}</button>
       {/each}
     </ul>
   {/if}

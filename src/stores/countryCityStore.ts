@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 
-export const countries = writable<{ code: string; name: string }[]>([]);
-export const cities = writable<{ name: string; lat: number; lon: number; country: string }[]>([]);
+export const countries = writable<{ countryCode: string; countryName: string; population?: string }[]>([]);
+export const cities = writable<any[]>([]);
 export const countriesLoaded = writable(false);
 export const citiesLoaded = writable(false);
 export const countryCityError = writable<string | null>(null);
@@ -22,37 +22,94 @@ export async function fetchAndCacheCountriesCities() {
   }
   console.log('Fetching from API');
   try {
-    const [countriesRes, citiesRes] = await Promise.all([
-      fetch('/api/countries'),
-      fetch('/api/cities?maxRows=5000') // Increased to get more cities
-    ]);
-    
+    // Fetch countries as before
+    const countriesRes = await fetch('/api/countries');
     if (!countriesRes.ok) {
       const errorData = await countriesRes.json().catch(() => ({}));
       throw new Error(errorData.error || `Failed to fetch countries: ${countriesRes.status}`);
     }
-    
-    if (!citiesRes.ok) {
-      const errorData = await citiesRes.json().catch(() => ({}));
-      throw new Error(errorData.error || `Failed to fetch cities: ${citiesRes.status}`);
-    }
-    
     const countriesData = await countriesRes.json();
-    const citiesData = await citiesRes.json();
+    countries.set(countriesData);
+    sessionStorage.setItem('countries', JSON.stringify(countriesData));
+    countriesLoaded.set(true);
+
+    // Batch fetch all cities
+    let allCities: any[] = [];
+    let startRow = 0;
+    const batchSize = 1000;
+    let keepFetching = true;
+    let batchCount = 0;
+    const maxBatches = 10; // Limit to 10 batches (10,000 cities) to avoid rate limits
     
-    if (!Array.isArray(countriesData) || !Array.isArray(citiesData)) {
-      throw new Error('Invalid data format received from API');
+    console.log('Starting batch fetch of cities...');
+    
+    while (keepFetching) {
+      batchCount++;
+      console.log(`Fetching batch ${batchCount}, startRow: ${startRow}`);
+      
+      try {
+        const res = await fetch(`/api/cities?maxRows=${batchSize}&startRow=${startRow}`);
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || `Failed to fetch cities batch ${batchCount}: ${res.status}`);
+        }
+        
+        const responseText = await res.text();
+        if (!responseText || responseText.trim() === '') {
+          console.log(`Batch ${batchCount}: empty response, stopping fetch`);
+          keepFetching = false;
+          break;
+        }
+        
+        const batch = JSON.parse(responseText);
+        
+        if (Array.isArray(batch) && batch.length > 0) {
+          console.log(`Batch ${batchCount}: received ${batch.length} cities`);
+          allCities = allCities.concat(batch);
+          startRow += batchSize;
+          
+          // If less than batchSize returned, we're done
+          if (batch.length < batchSize) {
+            console.log(`Batch ${batchCount} has fewer than ${batchSize} cities, stopping fetch`);
+            keepFetching = false;
+          }
+          
+          // Safety limit to prevent infinite loops and rate limiting
+          if (batchCount >= maxBatches) {
+            console.log(`Reached maximum of ${maxBatches} batches, stopping fetch`);
+            keepFetching = false;
+          }
+          
+          // Add a small delay between requests to avoid rate limiting
+          if (keepFetching) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        } else {
+          console.log(`Batch ${batchCount}: no cities returned, stopping fetch`);
+          keepFetching = false;
+        }
+      } catch (err: any) {
+        console.error(`Error in batch ${batchCount}:`, err);
+        // Continue with the cities we've already fetched instead of failing completely
+        keepFetching = false;
+      }
     }
     
-    console.log('Fetched countries:', countriesData.length, 'cities:', citiesData.length);
+    // Deduplicate by geonameId
+    const uniqueCities = Array.from(new Map(allCities.map(c => [c.geonameId, c])).values());
+    console.log(`Total cities fetched: ${allCities.length}, unique cities: ${uniqueCities.length}`);
     
-    countries.set(countriesData);
-    cities.set(citiesData.map((city: any) => ({ ...city, lon: city.lng })));
-    sessionStorage.setItem('countries', JSON.stringify(countriesData));
-    sessionStorage.setItem('cities', JSON.stringify(citiesData.map((city: any) => ({ ...city, lon: city.lng }))));
-    countriesLoaded.set(true);
-    citiesLoaded.set(true);
-    countryCityError.set(null);
+    if (uniqueCities.length > 0) {
+      cities.set(uniqueCities);
+      sessionStorage.setItem('cities', JSON.stringify(uniqueCities));
+      citiesLoaded.set(true);
+      countryCityError.set(null);
+      console.log('Successfully fetched and cached cities');
+    } else {
+      console.log('No cities were fetched successfully');
+      countryCityError.set('No cities could be fetched from the API');
+      citiesLoaded.set(false);
+    }
   } catch (err: any) {
     console.error('Error fetching countries/cities:', err);
     countryCityError.set(err.message || 'Unknown error fetching countries/cities');
@@ -71,15 +128,16 @@ export async function fetchCitiesForCountry(countryCode: string) {
     const citiesData = await res.json();
     if (Array.isArray(citiesData)) {
       const newCities = citiesData.map((city: any) => ({ ...city, lon: city.lng }));
+      let uniqueNewCities: any[] = [];
       cities.update(currentCities => {
         // Add new cities, avoiding duplicates
-        const existingNames = new Set(currentCities.map(c => c.name + c.country));
-        const uniqueNewCities = newCities.filter(city => 
-          !existingNames.has(city.name + city.country)
+        const existingIds = new Set(currentCities.map(c => c.geonameId));
+        uniqueNewCities = newCities.filter(city => 
+          !existingIds.has(city.geonameId)
         );
-        console.log(`Added ${uniqueNewCities.length} cities for ${countryCode}`);
         return [...currentCities, ...uniqueNewCities];
       });
+      console.log(`Added ${uniqueNewCities.length} cities for ${countryCode}`);
     }
   } catch (err) {
     console.error(`Error fetching cities for ${countryCode}:`, err);

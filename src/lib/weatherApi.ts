@@ -39,7 +39,7 @@ export async function getCurrentWeatherWithCache(city: City): Promise<Weather | 
   if (cached && cached.current_weather) {
     return cached.current_weather;
   }
-  const url = `${BASE_URL}?latitude=${city.lat}&longitude=${city.lon}&current_weather=true`;
+  const url = `${BASE_URL}?latitude=${city.lat}&longitude=${city.lon || (city as any).lng}&current_weather=true`;
   const res = await fetch(url);
   if (!res.ok) return null;
   const data = await res.json();
@@ -52,7 +52,7 @@ export async function getForecastWithCache(city: City): Promise<Forecast | null>
   if (cached && cached.daily) {
     return cached;
   }
-  const url = `${BASE_URL}?latitude=${city.lat}&longitude=${city.lon}&daily=temperature_2m_max,temperature_2m_min,weathercode&forecast_days=16&timezone=auto`;
+  const url = `${BASE_URL}?latitude=${city.lat}&longitude=${city.lon || (city as any).lng}&daily=temperature_2m_max,temperature_2m_min,weathercode&forecast_days=16&timezone=auto`;
   const res = await fetch(url);
   if (!res.ok) return null;
   const data = await res.json();

@@ -15,6 +15,14 @@
     updateDaysToShow();
     window.addEventListener('resize', updateDaysToShow);
   }
+
+  // Debug logging
+  $: if (forecast) {
+    console.log('ForecastPanel received forecast:', forecast);
+    console.log('ForecastPanel forecast.daily:', forecast.daily);
+    console.log('ForecastPanel time array:', forecast.daily?.time);
+    console.log('ForecastPanel daysToShow:', daysToShow);
+  }
 </script>
 
 {#if forecast}
