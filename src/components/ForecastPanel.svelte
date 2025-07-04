@@ -6,9 +6,8 @@
 
   function updateDaysToShow() {
     if (window.innerWidth < 500) daysToShow = 4;
-    else if (window.innerWidth < 700) daysToShow = 6;
-    else if (window.innerWidth < 900) daysToShow = 8;
-    else daysToShow = 12;
+    else if (window.innerWidth < 900) daysToShow = 6;
+    else daysToShow = 8;
   }
 
   if (typeof window !== 'undefined') {
