@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { onMount } from 'svelte';
-  import { cities, citiesLoaded } from '../stores/countryCityStore';
+  import { cities, citiesLoaded } from '../stores';
 
   export let selected: { name: string; lat: number; lon: number; country: string } | null = null;
   export let country: string | null = null;

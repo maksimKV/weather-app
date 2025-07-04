@@ -1,9 +1,9 @@
 <script>
   import '../styles/app.css';
   import { onMount } from 'svelte';
-  import { fetchAndCacheCountriesCities } from '../stores/countryCityStore';
+  import { initializeData } from '../lib/services/dataService';
   onMount(() => {
-    fetchAndCacheCountriesCities();
+    initializeData();
   });
 </script>
 

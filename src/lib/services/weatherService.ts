@@ -1,5 +1,5 @@
-import { weatherCacheStore } from '../../stores/weatherCacheStore';
-import type { City } from '../../stores/appStore';
+import { actions, selectors } from '../../stores';
+import type { City } from '../../stores';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -238,9 +238,11 @@ async function fetchLocationData(): Promise<LocationData> {
 export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | null> {
   try {
     const normalizedCity = normalizeCity(city);
+    const cityKey = `${normalizedCity.name}|${normalizedCity.lat}|${normalizedCity.lon}`;
     
     // Check cache first
-    const cached = weatherCacheStore.get(normalizedCity);
+    const cacheStats = selectors.getCacheStats();
+    const cached = cacheStats.size > 0 ? actions.getWeatherCache(cityKey) : null;
     if (cached?.current_weather) {
       return addWeatherIcons(cached.current_weather);
     }
@@ -250,7 +252,7 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
     if (!weather) return null;
     
     // Cache the result
-    weatherCacheStore.setWeather(normalizedCity, { current_weather: weather });
+    actions.setWeatherCache(cityKey, { current_weather: weather });
     
     return addWeatherIcons(weather);
   } catch (error) {
@@ -262,9 +264,10 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
 export async function getForecast(city: City): Promise<ForecastWithIcons | null> {
   try {
     const normalizedCity = normalizeCity(city);
+    const cityKey = `${normalizedCity.name}|${normalizedCity.lat}|${normalizedCity.lon}`;
     
     // Check cache first
-    const cached = weatherCacheStore.get(normalizedCity);
+    const cached = actions.getWeatherCache(cityKey);
     if (cached?.daily) {
       return addForecastIcons(cached);
     }
@@ -274,7 +277,7 @@ export async function getForecast(city: City): Promise<ForecastWithIcons | null>
     if (!forecast) return null;
     
     // Cache the result
-    weatherCacheStore.setWeather(normalizedCity, forecast);
+    actions.setWeatherCache(cityKey, forecast);
     
     return addForecastIcons(forecast);
   } catch (error) {
@@ -342,19 +345,14 @@ export async function getWeatherForCities(cities: City[]): Promise<Record<string
 // ============================================================================
 
 export function clearWeatherCache(): void {
-  localStorage.removeItem('weatherCache');
-  // Force reload to clear in-memory cache
-  location.reload();
+  actions.clearWeatherCache();
 }
 
 export function getCacheStats(): { size: number; entries: number } {
-  const cache = localStorage.getItem('weatherCache');
-  if (!cache) return { size: 0, entries: 0 };
-  
-  const parsed = JSON.parse(cache);
+  const stats = selectors.getCacheStats();
   return {
-    size: new Blob([cache]).size,
-    entries: Object.keys(parsed).length
+    size: stats.totalSize,
+    entries: stats.size
   };
 }
 

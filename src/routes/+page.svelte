@@ -4,65 +4,49 @@
   import MapView from '../components/MapView.svelte';
   import ForecastPanel from '../components/ForecastPanel.svelte';
   import LocationForecastCard from '../components/LocationForecastCard.svelte';
-  import { appStore } from '../stores/appStore';
-  import { countries, cities, countryCityError, fetchCitiesForCountry } from '../stores/countryCityStore';
+  import { 
+    selectedCountry, 
+    selectedCity, 
+    citiesOfSelectedCountry, 
+    weatherWithIcons, 
+    currentForecast, 
+    locationData, 
+    loading, 
+    errors, 
+    actions 
+  } from '../stores';
   import { getCurrentWeather, getForecast, getLocationForecast, getWeatherForCities, clearWeatherCache, WEATHER_ICONS } from '../lib/services/weatherService';
+  import { initializeData, fetchCitiesForCountry } from '../lib/services/dataService';
   import { fly, fade } from 'svelte/transition';
   import { onMount, tick } from 'svelte';
-  import { get } from 'svelte/store';
 
   // Use weather icons from service
   const iconMap = WEATHER_ICONS;
 
-  let selectedCountry = null;
-  let selectedCity = null;
   let cityManuallySelected = false;
   let mapCenter: [number, number] = [20, 0];
   let mapZoom = 2;
-  let cityWeather: Record<string, { temperature: number; icon: string }> = {};
-  let forecast: any = null;
-  let locationForecast: any = null;
-  let locationName = '';
-  let locationCountry = '';
-  let locationError = ''; // Add this to track geolocation errors
-  let loadingCities = false;
-  let loadingForecast = false;
-  let loadingLocationForecast = false;
-  let fetchingAdditionalCities = false;
   let clearCityInput = 0; // Counter to force CitySelector to clear
 
-  // Subscribe to store
-  $: appState = $appStore;
-  $: selectedCountry = appState.selectedCountry;
-  $: selectedCity = appState.selectedCity;
-
-  // Function to determine city limit based on country size
-  function getCityLimit(country: any): number {
-    if (!country || !country.population) return 10; // Default fallback
-    
-    const population = parseInt(country.population);
-    
-    if (population > 100000000) return 25; // Very large countries (China, India, etc.)
-    if (population > 50000000) return 20;  // Large countries (US, Brazil, etc.)
-    if (population > 20000000) return 15;  // Medium-large countries
-    if (population > 10000000) return 12;  // Medium countries
-    if (population > 5000000) return 10;   // Small-medium countries
-    if (population > 1000000) return 8;    // Small countries
-    return 5; // Very small countries
-  }
-
-  // Filter cities for selected country (for map display)
-  $: countryCities = selectedCountry ? 
-    $cities.filter(c => c.countryCode === selectedCountry.code).slice(0, getCityLimit(selectedCountry)) : 
-    selectedCity ? [selectedCity] : [];
+  // Derived values from stores
+  $: countryCities = $citiesOfSelectedCountry;
+  $: cityWeather = $weatherWithIcons;
+  $: forecast = $currentForecast;
+  $: locationForecast = $locationData.forecast;
+  $: locationName = $locationData.name;
+  $: locationCountry = $locationData.country;
+  $: locationError = $locationData.error;
+  $: loadingCities = $loading.weather;
+  $: loadingForecast = $loading.forecast;
+  $: loadingLocationForecast = $loading.location;
 
   // Set map center on country/city change
-  $: if (selectedCity) {
-    mapCenter = [selectedCity.lat, selectedCity.lon ?? selectedCity.lng];
+  $: if ($selectedCity) {
+    mapCenter = [$selectedCity.lat, $selectedCity.lon];
     mapZoom = 7;
-  } else if (selectedCountry && countryCities.length) {
+  } else if ($selectedCountry && countryCities.length) {
     // Center on first city in country
-    mapCenter = [countryCities[0].lat, countryCities[0].lng];
+    mapCenter = [countryCities[0].lat, countryCities[0].lon];
     mapZoom = 5;
   } else {
     mapCenter = [20, 0];
@@ -74,59 +58,43 @@
     if (!countryCities.length) {
       return;
     }
-    loadingCities = true;
+    actions.setLoading('weather', true);
     
     const weatherResults = await getWeatherForCities(countryCities);
-    cityWeather = Object.fromEntries(
-      Object.entries(weatherResults).map(([cityName, weather]) => [
-        cityName,
-        {
-          temperature: Math.round(weather.temperature),
-          icon: weather.icon,
-        }
-      ])
-    );
+    actions.setMultipleCityWeather(weatherResults);
     
-    loadingCities = false;
+    actions.setLoading('weather', false);
   }
 
   // Fetch weather for selected city
   async function loadSelectedCityWeather() {
-    if (!selectedCity) return;
+    if (!$selectedCity) return;
     
-    const weather = await getCurrentWeather(selectedCity);
+    const weather = await getCurrentWeather($selectedCity);
     if (weather) {
-      cityWeather = {
-        ...cityWeather,
-        [selectedCity.name]: {
-          temperature: Math.round(weather.temperature),
-          icon: weather.icon,
-        }
-      };
+      actions.setCityWeather($selectedCity.name, weather);
     }
   }
 
   // Fetch forecast for selected city
   async function loadForecast() {
-    if (!selectedCity) return;
-    loadingForecast = true;
+    if (!$selectedCity) return;
+    actions.setLoading('forecast', true);
     
     try {
-      const forecastData = await getForecast(selectedCity);
-      forecast = forecastData;
+      const forecastData = await getForecast($selectedCity);
+      actions.setCurrentForecast(forecastData);
     } catch (error) {
       console.error('Error loading forecast:', error);
-      forecast = null;
+      actions.setCurrentForecast(null);
     }
-    loadingForecast = false;
+    
+    actions.setLoading('forecast', false);
   }
 
   // Handle country/city selection
   async function handleCountrySelect(e) {
-    appStore.setCountry(e.detail);
-    appStore.setCity(null);
-    forecast = null;
-    cityWeather = {};
+    actions.setSelectedCountry(e.detail);
     cityManuallySelected = false;
     
     // Increment the clear counter to trigger CitySelector to clear
@@ -135,9 +103,8 @@
     await tick();
     
     // If no cities found for this country, fetch additional cities
-    if (countryCities.length === 0 && !fetchingAdditionalCities) {
-      fetchingAdditionalCities = true;
-      await fetchCitiesForCountry(e.detail.code);
+    if (countryCities.length === 0) {
+      await fetchCitiesForCountry(e.detail.countryCode);
       await tick(); // Wait for cities to update
     }
     
@@ -146,49 +113,53 @@
       loadCityWeather();
     }
   }
+
   function handleCitySelect(e) {
     const selectedCityData = e.detail;
-    appStore.setCity(selectedCityData);
-    
-    // Clear the country when a city is selected
-    // This allows independent city selection
-    appStore.setCountry(null);
-    
+    actions.setSelectedCity(selectedCityData);
     cityManuallySelected = true;
   }
 
   // IP-based geolocation for user forecast
   async function detectLocation() {
-    loadingLocationForecast = true;
-    locationError = ''; // Clear any previous errors
+    actions.setLoading('location', true);
+    actions.setLocationData({ error: null });
     
     try {
       const locationData = await getLocationForecast();
       
       if (locationData) {
-        locationForecast = locationData.forecast;
-        locationName = locationData.location;
-        locationCountry = locationData.country;
+        actions.setLocationData({
+          forecast: locationData.forecast,
+          name: locationData.location,
+          country: locationData.country,
+          error: null
+        });
       } else {
         throw new Error('Failed to fetch location forecast');
       }
     } catch (error) {
       console.error('IP geolocation failed:', error);
-      locationForecast = null;
-      locationName = 'Location unavailable';
-      locationCountry = '';
-      locationError = 'Unable to determine your location. Please select a city manually.';
+      actions.setLocationData({
+        forecast: null,
+        name: 'Location unavailable',
+        country: '',
+        error: 'Unable to determine your location. Please select a city manually.'
+      });
     }
     
-    loadingLocationForecast = false;
+    actions.setLoading('location', false);
   }
 
-  onMount(() => {
-    if (selectedCountry && countryCities.length) loadCityWeather();
+  onMount(async () => {
+    // Initialize data
+    await initializeData();
+    
     // If no city has been manually selected this session, reset selectedCity to null
     if (!cityManuallySelected) {
-      appStore.setCity(null);
+      actions.setSelectedCity(null);
     }
+    
     // Add a small delay to ensure cities are loaded before geolocation
     setTimeout(() => {
       detectLocation();
@@ -196,26 +167,19 @@
   });
 
   // Reactively load forecast when selectedCity changes
-  $: if (selectedCity) {
+  $: if ($selectedCity) {
     loadSelectedCityWeather();
     loadForecast();
   }
 
   // Reactively load weather for cities when countryCities changes
-  $: if (countryCities.length > 0 && selectedCountry) {
+  $: if (countryCities.length > 0 && $selectedCountry) {
     loadCityWeather();
-  }
-
-  // Reset fetching flag when cities are updated
-  $: if ($cities.length > 0) {
-    fetchingAdditionalCities = false;
   }
 
   function clearCache() {
     clearWeatherCache();
   }
-
-
 </script>
 
 <main>
@@ -225,13 +189,13 @@
   </div>
   
   <div class="selectors" in:fade>
-    <CountrySelector selected={selectedCountry} on:select={handleCountrySelect} />
-    <CitySelector selected={selectedCity} country={selectedCountry?.code || null} clearTrigger={clearCityInput} on:select={handleCitySelect} />
+    <CountrySelector selected={$selectedCountry} on:select={handleCountrySelect} />
+    <CitySelector selected={$selectedCity} country={$selectedCountry?.countryCode || null} clearTrigger={clearCityInput} on:select={handleCitySelect} />
   </div>
   
-  {#if $countryCityError}
+  {#if $errors.countries || $errors.cities}
     <div class="error-message" in:fade>
-      <p>⚠️ {$countryCityError}</p>
+      <p>⚠️ {$errors.countries || $errors.cities}</p>
       <p class="error-help">Please check your .env file and ensure VITE_GEONAMES_USERNAME is set to a valid GeoNames username.</p>
     </div>
   {/if}
@@ -244,31 +208,30 @@
       cities={countryCities}
       center={mapCenter}
       zoom={mapZoom}
-      selectedCity={selectedCity}
+      selectedCity={$selectedCity}
       weatherByCity={cityWeather}
       onMarkerClick={(city) => {
-        appStore.setCity(city);
-        appStore.setCountry(null); // Clear country when city is selected via map
+        actions.setSelectedCity(city);
         cityManuallySelected = true;
       }}
     />
   </div>
 
   <div class="forecast-section" in:fade>
-    {#if selectedCity && cityManuallySelected}
+    {#if $selectedCity && cityManuallySelected}
       {#if loadingForecast}
         <div class="loading-message">
           <div class="loading-spinner"></div>
-          <p>Loading forecast for {selectedCity.name}...</p>
+          <p>Loading forecast for {$selectedCity.name}...</p>
         </div>
       {:else if forecast}
         <div class="city-forecast-title">
-          Weather in {selectedCity.name}
+          Weather in {$selectedCity.name}
         </div>
         <ForecastPanel {forecast} />
       {:else}
         <div class="loading-message">
-          <p>No forecast data available for {selectedCity.name}</p>
+          <p>No forecast data available for {$selectedCity.name}</p>
         </div>
       {/if}
     {/if}
@@ -362,8 +325,8 @@ h1 {
   100% { transform: rotate(360deg); }
 }
 .error-message {
-  background: #ffebee;
-  border: 1px solid #f44336;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
   border-radius: var(--border-radius);
   padding: 1em;
   margin: 1em 0;
@@ -371,22 +334,10 @@ h1 {
 }
 .error-message p {
   margin: 0.5em 0;
-  color: #d32f2f;
+  color: #856404;
 }
 .error-help {
   font-size: 0.9em;
-  color: #666 !important;
-  text-align: left;
-  margin-top: 1em;
-}
-
-.error-help ul {
-  margin: 0.5em 0;
-  padding-left: 1.5em;
-}
-
-.error-help li {
-  margin: 0.3em 0;
-  line-height: 1.4;
+  color: #856404;
 }
 </style>

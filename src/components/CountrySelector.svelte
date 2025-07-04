@@ -1,9 +1,9 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { onMount } from 'svelte';
-  import { countries, countriesLoaded } from '../stores/countryCityStore';
+  import { countries, countriesLoaded } from '../stores';
 
-  export let selected: { code: string; name: string } | null = null;
+  export let selected: { countryCode: string; countryName: string } | null = null;
   let search = '';
   let filtered: { countryCode: string; countryName: string; population?: string }[] = [];
   const dispatch = createEventDispatcher();
@@ -18,7 +18,7 @@
   }
 
   onMount(() => {
-    if (selected) search = selected.name;
+    if (selected) search = selected.countryName;
   });
 
   $: if (selected === null) {
