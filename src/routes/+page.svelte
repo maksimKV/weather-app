@@ -58,17 +58,12 @@
 
   // Fetch weather for all cities in selected country
   async function loadCityWeather() {
-    console.log('loadCityWeather called with countryCities:', countryCities.length);
-    
     if (!countryCities.length) {
-      console.log('No countryCities, returning early');
       return;
     }
     
     try {
       actions.setLoading('weather', true);
-      
-      console.log('Loading weather for cities:', countryCities.length, 'cities');
       
       // Validate cities before fetching weather
       const validCities = countryCities.filter(city => validateCityData(city));
@@ -77,13 +72,7 @@
         return;
       }
       
-      console.log('Valid cities for weather fetch:', validCities.length);
-      console.log('First few cities:', validCities.slice(0, 3).map(c => c.name));
-      
       const weatherResults = await getWeatherForCities(validCities);
-      
-      console.log('Weather results received:', Object.keys(weatherResults).length, 'cities');
-      console.log('Weather results keys:', Object.keys(weatherResults));
       
       // Validate weather results before setting
       const validWeatherResults: Record<string, any> = {};
@@ -93,7 +82,6 @@
         }
       }
       
-      console.log('Setting weather for cities:', Object.keys(validWeatherResults).length);
       actions.setMultipleCityWeather(validWeatherResults);
     } catch (error) {
       console.error('Error loading city weather:', error);

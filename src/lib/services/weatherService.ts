@@ -383,7 +383,6 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
     // Check memoization cache first
     const memoized = weatherMemoCache.get(cityKey);
     if (memoized) {
-      console.log(`Cache hit for ${city.name}`);
       return memoized;
     }
     
@@ -394,12 +393,9 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
       const weatherWithIcons = addWeatherIcons(cached.current_weather);
       if (weatherWithIcons) {
         weatherMemoCache.set(cityKey, weatherWithIcons);
-        console.log(`Store cache hit for ${city.name}`);
         return weatherWithIcons;
       }
     }
-    
-    console.log(`Fetching weather for ${city.name} (${lat}, ${lon})`);
     
     // Fetch from API
     const weather = await fetchCurrentWeatherRaw(normalizedCity.lat, normalizedCity.lon);
@@ -419,7 +415,6 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
     weatherMemoCache.set(cityKey, weatherWithIcons);
     actions.setWeatherCache(cityKey, { current_weather: weather });
     
-    console.log(`Successfully fetched weather for ${city.name}: ${weather.temperature}°C`);
     return weatherWithIcons;
   } catch (error) {
     console.error('Error fetching current weather for city:', city?.name, error);
@@ -498,34 +493,17 @@ export async function getLocationForecast(): Promise<{ forecast: ForecastWithIco
 // ============================================================================
 
 export async function getWeatherForCities(cities: City[]): Promise<Record<string, WeatherWithIcon>> {
-  console.log('=== getWeatherForCities called ===');
-  console.log('Input cities:', cities.length);
-  
   // Filter out cities with invalid coordinates
   const validCities = cities.filter(city => {
     const lat = Number(city.lat);
     // Try both 'lon' and 'lng' fields for longitude
     const lon = Number(city.lon || (city as any).lng);
-    const isValid = !isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
-    
-    if (!isValid) {
-      console.log(`Invalid coordinates for ${city.name}: lat=${city.lat} (${lat}), lon=${city.lon || (city as any).lng} (${lon})`);
-    }
-    
-    return isValid;
+    return !isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
   });
   
-  console.log('Valid cities after coordinate validation:', validCities.length);
-  if (validCities.length > 0) {
-    console.log('Sample valid city:', validCities[0]);
-  }
-  
   if (validCities.length === 0) {
-    console.log('No valid cities found, returning empty object');
     return {};
   }
-  
-  console.log(`Fetching weather for ${validCities.length} cities`);
   
   // Process cities in parallel with controlled concurrency
   const chunks = [];
@@ -533,14 +511,11 @@ export async function getWeatherForCities(cities: City[]): Promise<Record<string
     chunks.push(validCities.slice(i, i + MAX_CONCURRENT_REQUESTS));
   }
   
-  console.log(`Created ${chunks.length} chunks for processing`);
-  
   // Process chunks sequentially to avoid race conditions
   const results: Record<string, WeatherWithIcon> = {};
   
   for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
     const chunk = chunks[chunkIndex];
-    console.log(`Processing chunk ${chunkIndex + 1}/${chunks.length} with ${chunk.length} cities`);
     
     // Process cities in this chunk in parallel
     const chunkPromises = chunk.map(async (city) => {
@@ -548,10 +523,7 @@ export async function getWeatherForCities(cities: City[]): Promise<Record<string
         const normalized = normalizeCityMemoized(city);
         const weather = await getCurrentWeather(normalized);
         if (weather) {
-          console.log(`Got weather for ${city.name}: ${weather.temperature}°C`);
           return { cityName: normalized.name, weather };
-        } else {
-          console.log(`No weather returned for ${city.name}`);
         }
       } catch (error) {
         console.error(`Error fetching weather for ${city.name}:`, error);
@@ -561,13 +533,11 @@ export async function getWeatherForCities(cities: City[]): Promise<Record<string
     
     // Wait for all cities in this chunk to complete
     const chunkResults = await Promise.all(chunkPromises);
-    console.log(`Chunk ${chunkIndex + 1} completed with ${chunkResults.filter(r => r !== null).length} successful results`);
     
     // Add successful results to the main results object
     for (const result of chunkResults) {
       if (result) {
         results[result.cityName] = result.weather;
-        console.log(`Added ${result.cityName} to results`);
       }
     }
     
@@ -577,7 +547,6 @@ export async function getWeatherForCities(cities: City[]): Promise<Record<string
     }
   }
   
-  console.log(`Successfully fetched weather for ${Object.keys(results).length} cities:`, Object.keys(results));
   return results;
 }
 

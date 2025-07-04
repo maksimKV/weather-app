@@ -496,8 +496,6 @@ export async function initializeData(): Promise<void> {
       fetchCountries(),
       fetchCities()
     ]);
-    
-    console.log(`Initialized with ${countries.length} countries and ${cities.length} cities`);
   } catch (error) {
     console.error('Failed to initialize data:', error);
     throw error;
