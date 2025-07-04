@@ -29,5 +29,11 @@ export default defineConfig({
 				]
 			}
 		})
-	]
+	],
+	ssr: {
+		noExternal: ['svelte-leaflet']
+	},
+	optimizeDeps: {
+		include: ['svelte-leaflet']
+	}
 });

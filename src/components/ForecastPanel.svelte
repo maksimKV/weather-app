@@ -4,12 +4,14 @@ import { COUNTRY_CITIES } from '../lib/cityData';
 import { fetch6DayForecast, type ForecastDay } from '../lib/weatherApi';
 import { onMount } from 'svelte';
 import { fly } from 'svelte/transition';
-import { Chart } from 'svelte-chartjs';
+import Chart from 'chart.js/auto';
 
 let country: string;
 let city: string;
 let forecast: ForecastDay[] = [];
 let loading = true;
+let chartRef: HTMLCanvasElement;
+let chartInstance: Chart | null = null;
 
 selectedCountry.subscribe((c) => (country = c));
 selectedCity.subscribe((c) => (city = c));
@@ -23,6 +25,7 @@ async function loadForecast() {
     forecast = [];
   }
   loading = false;
+  updateChart();
 }
 
 $: country, city, loadForecast();
@@ -31,36 +34,49 @@ function weekday(dt: number) {
   return new Date(dt * 1000).toLocaleDateString(undefined, { weekday: 'short' });
 }
 
-$: data = {
-  labels: forecast.map(day => weekday(day.dt)),
-  datasets: [
-    {
-      label: 'Temp (°C)',
-      data: forecast.map(day => Math.round(day.temp)),
-      borderColor: '#2563eb',
-      backgroundColor: 'rgba(37,99,235,0.2)',
-      fill: true,
-      tension: 0.4
-    }
-  ]
-};
-
-$: options = {
-  responsive: true,
-  plugins: {
-    legend: { display: false },
-    title: { display: true, text: 'Temperature Trend' }
-  },
-  scales: {
-    y: {
-      beginAtZero: false,
-      ticks: { color: '#2563eb' }
-    },
-    x: {
-      ticks: { color: '#2563eb' }
-    }
+function updateChart() {
+  if (!chartRef) return;
+  if (chartInstance) {
+    chartInstance.destroy();
   }
-};
+  if (forecast.length === 0) return;
+  chartInstance = new Chart(chartRef, {
+    type: 'line',
+    data: {
+      labels: forecast.map(day => weekday(day.dt)),
+      datasets: [
+        {
+          label: 'Temp (°C)',
+          data: forecast.map(day => Math.round(day.temp)),
+          borderColor: '#2563eb',
+          backgroundColor: 'rgba(37,99,235,0.2)',
+          fill: true,
+          tension: 0.4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        title: { display: true, text: 'Temperature Trend' }
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          ticks: { color: '#2563eb' }
+        },
+        x: {
+          ticks: { color: '#2563eb' }
+        }
+      }
+    }
+  });
+}
+
+onMount(() => {
+  updateChart();
+});
 </script>
 
 <div class="w-full max-w-3xl mx-auto mt-4">
@@ -79,11 +95,7 @@ $: options = {
       {/each}
     </div>
     <div class="mt-4">
-      <Chart
-        type="line"
-        {options}
-        {data}
-      />
+      <canvas bind:this={chartRef} class="w-full h-40"></canvas>
     </div>
   {:else}
     <div class="text-red-500">Forecast unavailable.</div>

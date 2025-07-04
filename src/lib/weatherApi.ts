@@ -96,7 +96,7 @@ export async function fetch6DayForecast(lat: number, lon: number): Promise<Forec
 
 export async function fetchLocationByIP(): Promise<{ lat: number; lon: number; city: string } | null> {
   try {
-    const res = await fetch('https://ip-api.com/json');
+    const res = await fetch('http://ip-api.com/json');
     if (!res.ok) return null;
     const data = await res.json();
     return { lat: data.lat, lon: data.lon, city: data.city };
