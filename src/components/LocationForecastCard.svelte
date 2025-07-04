@@ -24,7 +24,7 @@
       <span class="location-label">Your Current Location:</span>
       <span class="location-city">{location}</span>
       {#if country}
-        <span class="location-country">, {country}</span>
+        <span class="location-city">, {country}</span>
       {/if}
     </div>
     <div class="forecast-panel">
@@ -78,10 +78,21 @@
   color: #888;
 }
 .forecast-panel {
-  display: flex;
-  gap: 1em;
-  justify-content: center;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.7em;
+  justify-items: center;
+  margin: 0 auto;
+}
+@media (max-width: 900px) {
+  .forecast-panel {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 700px) {
+  .forecast-panel {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 .day {
   background: var(--secondary);
@@ -90,7 +101,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 90px;
+  min-width: 80px;
+  box-sizing: border-box;
 }
 .big-weather-icon {
   width: 56px;
