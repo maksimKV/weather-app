@@ -34,8 +34,16 @@
           <div>{new Date(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</div>
           <img class="big-weather-icon" src={icons[forecast.daily.weathercode[i]] || icons[0]} alt="icon" width="56" height="56" />
           <div class="temps">
-            <span class="min-temp"><img src="/weather-icons/min-temp.svg" alt="" width="18" height="18" /> {forecast.daily.temperature_2m_min[i]}°C</span>
-            <span class="max-temp"><img src="/weather-icons/clear-day.svg" alt="" width="18" height="18" /> {forecast.daily.temperature_2m_max[i]}°C</span>
+            <span class="min-temp temp-block">
+              <span class="temp-row"><img src="/weather-icons/min-temp.svg" alt="" width="18" height="18" /> {forecast.daily.temperature_2m_min[i]}°C</span>
+              <div class="temp-separator"></div>
+              <span class="temp-row"><img src="/weather-icons/min-temp.svg" alt="" width="18" height="18" /> {(forecast.daily.temperature_2m_min[i] * 9/5 + 32).toFixed(1)}°F</span>
+            </span>
+            <span class="max-temp temp-block">
+              <span class="temp-row"><img src="/weather-icons/clear-day.svg" alt="" width="18" height="18" /> {forecast.daily.temperature_2m_max[i]}°C</span>
+              <div class="temp-separator"></div>
+              <span class="temp-row"><img src="/weather-icons/clear-day.svg" alt="" width="18" height="18" /> {(forecast.daily.temperature_2m_max[i] * 9/5 + 32).toFixed(1)}°F</span>
+            </span>
           </div>
         </div>
       {/each}
@@ -94,7 +102,22 @@
   display: flex;
   gap: 0.5em;
 }
-.min-temp img, .max-temp img { vertical-align: middle; margin-right: 0.2em; }
 .min-temp { color: #2196f3; font-weight: 500; }
 .max-temp { color: #f44336; font-weight: 500; }
+.temp-block {
+  display: inline-block;
+  margin: 0 0.3em;
+}
+.temp-row {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  min-width: 70px;
+  margin: 0.1em 0;
+}
+.temp-separator {
+  border-bottom: 2.5px solid #bdbdbd;
+  margin: 0.28em 0 0.28em 0;
+  width: 100%;
+}
 </style> 
