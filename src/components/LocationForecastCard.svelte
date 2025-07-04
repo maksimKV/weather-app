@@ -1,7 +1,6 @@
 <script lang="ts">
   export let forecast: any = null;
   export let location: string = '';
-  export let icons: Record<number, string> = {};
   export let country: string = '';
 
   let daysToShow = 10;
@@ -30,7 +29,7 @@
       {#each forecast.daily.time.slice(0, daysToShow) as date, i}
         <WeatherCard
           date={new Date(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-          mainIcon={icons[forecast.daily.weathercode[i]] || icons[0]}
+          mainIcon={forecast.icons[forecast.daily.weathercode[i]] || forecast.icons[0]}
           minC={forecast.daily.temperature_2m_min[i]}
           maxC={forecast.daily.temperature_2m_max[i]}
           minIcon="/weather-icons/min-temp.svg"

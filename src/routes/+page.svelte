@@ -6,43 +6,13 @@
   import LocationForecastCard from '../components/LocationForecastCard.svelte';
   import { appStore } from '../stores/appStore';
   import { countries, cities, countryCityError, fetchCitiesForCountry } from '../stores/countryCityStore';
-  import { fetchCurrentWeather, fetchForecast, getCurrentWeatherWithCache, getForecastWithCache } from '../lib/weatherApi';
+  import { getCurrentWeather, getForecast, getLocationForecast, getWeatherForCities, clearWeatherCache, WEATHER_ICONS } from '../lib/services/weatherService';
   import { fly, fade } from 'svelte/transition';
   import { onMount, tick } from 'svelte';
   import { get } from 'svelte/store';
-  import { weatherCacheStore } from '../stores/weatherCacheStore';
 
-  // Weather icon mapping (Open-Meteo weather codes to SVGs)
-  const iconMap: Record<number, string> = {
-    0: '/weather-icons/clear-day.svg',
-    1: '/weather-icons/mainly-clear.svg',
-    2: '/weather-icons/partly-cloudy.svg',
-    3: '/weather-icons/overcast.svg',
-    45: '/weather-icons/fog.svg',
-    48: '/weather-icons/depositing-rime-fog.svg',
-    51: '/weather-icons/drizzle.svg',
-    53: '/weather-icons/drizzle.svg',
-    55: '/weather-icons/drizzle.svg',
-    56: '/weather-icons/freezing-drizzle.svg',
-    57: '/weather-icons/freezing-drizzle.svg',
-    61: '/weather-icons/rain.svg',
-    63: '/weather-icons/rain.svg',
-    65: '/weather-icons/rain.svg',
-    66: '/weather-icons/freezing-rain.svg',
-    67: '/weather-icons/freezing-rain.svg',
-    71: '/weather-icons/snow.svg',
-    73: '/weather-icons/snow.svg',
-    75: '/weather-icons/snow.svg',
-    77: '/weather-icons/snow-grains.svg',
-    80: '/weather-icons/showers.svg',
-    81: '/weather-icons/showers.svg',
-    82: '/weather-icons/showers.svg',
-    85: '/weather-icons/snow-showers.svg',
-    86: '/weather-icons/snow-showers.svg',
-    95: '/weather-icons/thunderstorm.svg',
-    96: '/weather-icons/thunderstorm-hail.svg',
-    99: '/weather-icons/thunderstorm-hail.svg',
-  };
+  // Use weather icons from service
+  const iconMap = WEATHER_ICONS;
 
   let selectedCountry = null;
   let selectedCity = null;
@@ -105,22 +75,18 @@
       return;
     }
     loadingCities = true;
-    const results: Record<string, { temperature: number; icon: string }> = {};
     
-    // Process cities sequentially with delays to avoid rate limiting
-    for (const city of countryCities) {
-      const weather = await getCurrentWeatherWithCache(city);
-      if (weather) {
-        results[city.name] = {
+    const weatherResults = await getWeatherForCities(countryCities);
+    cityWeather = Object.fromEntries(
+      Object.entries(weatherResults).map(([cityName, weather]) => [
+        cityName,
+        {
           temperature: Math.round(weather.temperature),
-          icon: iconMap[weather.weathercode] || iconMap[0],
-        };
-      }
-      // Add a small delay between requests to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
+          icon: weather.icon,
+        }
+      ])
+    );
     
-    cityWeather = results;
     loadingCities = false;
   }
 
@@ -128,13 +94,13 @@
   async function loadSelectedCityWeather() {
     if (!selectedCity) return;
     
-    const weather = await getCurrentWeatherWithCache(selectedCity);
+    const weather = await getCurrentWeather(selectedCity);
     if (weather) {
       cityWeather = {
         ...cityWeather,
         [selectedCity.name]: {
           temperature: Math.round(weather.temperature),
-          icon: iconMap[weather.weathercode] || iconMap[0],
+          icon: weather.icon,
         }
       };
     }
@@ -146,7 +112,8 @@
     loadingForecast = true;
     
     try {
-      forecast = await getForecastWithCache(selectedCity);
+      const forecastData = await getForecast(selectedCity);
+      forecast = forecastData;
     } catch (error) {
       console.error('Error loading forecast:', error);
       forecast = null;
@@ -196,21 +163,14 @@
     locationError = ''; // Clear any previous errors
     
     try {
-      const response = await fetch('https://ipapi.co/json/');
+      const locationData = await getLocationForecast();
       
-      if (response.ok) {
-        const data = await response.json();
-        
-        if (data.latitude && data.longitude) {
-          locationForecast = await fetchForecast(data.latitude, data.longitude);
-          
-          locationName = data.city || 'Your Location (Approximate)';
-          locationCountry = data.country_name || '';
-        } else {
-          throw new Error('No coordinates in IP response');
-        }
+      if (locationData) {
+        locationForecast = locationData.forecast;
+        locationName = locationData.location;
+        locationCountry = locationData.country;
       } else {
-        throw new Error(`IP API responded with status: ${response.status}`);
+        throw new Error('Failed to fetch location forecast');
       }
     } catch (error) {
       console.error('IP geolocation failed:', error);
@@ -252,8 +212,7 @@
   }
 
   function clearCache() {
-    localStorage.clear();
-    location.reload();
+    clearWeatherCache();
   }
 
 
@@ -306,7 +265,7 @@
         <div class="city-forecast-title">
           Weather in {selectedCity.name}
         </div>
-        <ForecastPanel {forecast} icons={iconMap} />
+        <ForecastPanel {forecast} />
       {:else}
         <div class="loading-message">
           <p>No forecast data available for {selectedCity.name}</p>
@@ -319,7 +278,7 @@
         <p>Loading your location weather...</p>
       </div>
     {:else if locationForecast}
-      <LocationForecastCard forecast={locationForecast} location={locationName} country={locationCountry} icons={iconMap} />
+      <LocationForecastCard forecast={locationForecast} location={locationName} country={locationCountry} />
     {:else if locationError}
       <div class="error-message" in:fade>
         <p>⚠️ {locationError}</p>
