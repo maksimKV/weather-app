@@ -56,8 +56,10 @@ export interface WeatherServiceError {
 
 const BASE_URL = 'https://api.open-meteo.com/v1/forecast';
 const IP_API_URL = 'https://ipapi.co/json/';
-const REQUEST_DELAY_MS = 100; // Rate limiting delay
-const MAX_CONCURRENT_REQUESTS = 3;
+const REQUEST_DELAY_MS = 50; // Reduced delay for better performance
+const MAX_CONCURRENT_REQUESTS = 6; // Increased concurrency
+const CACHE_DURATION_MS = 10 * 60 * 1000; // 10 minutes
+const PREFETCH_THRESHOLD = 0.8; // Prefetch when cache is 80% full
 
 // Weather icon mapping
 export const WEATHER_ICONS: Record<number, string> = {
@@ -92,22 +94,77 @@ export const WEATHER_ICONS: Record<number, string> = {
 };
 
 // ============================================================================
-// REQUEST MANAGEMENT
+// MEMOIZATION & CACHING
 // ============================================================================
 
-class RequestQueue {
+class MemoizationCache<T> {
+  private cache = new Map<string, { data: T; timestamp: number }>();
+  private maxSize: number;
+
+  constructor(maxSize: number = 1000) {
+    this.maxSize = maxSize;
+  }
+
+  get(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    
+    if (Date.now() - entry.timestamp > CACHE_DURATION_MS) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return entry.data;
+  }
+
+  set(key: string, data: T): void {
+    // Implement LRU eviction
+    if (this.cache.size >= this.maxSize) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey) {
+        this.cache.delete(oldestKey);
+      }
+    }
+    
+    this.cache.set(key, { data, timestamp: Date.now() });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  size(): number {
+    return this.cache.size;
+  }
+}
+
+// Memoization caches
+const weatherMemoCache = new MemoizationCache<WeatherWithIcon>();
+const forecastMemoCache = new MemoizationCache<ForecastWithIcons>();
+const locationMemoCache = new MemoizationCache<LocationData>();
+
+// ============================================================================
+// ENHANCED REQUEST MANAGEMENT
+// ============================================================================
+
+class EnhancedRequestQueue {
   private queue: Array<() => Promise<any>> = [];
   private running = 0;
   private requestCache = new Map<string, Promise<any>>();
+  private abortControllers = new Map<string, AbortController>();
 
-  async add<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
+  async add<T>(key: string, requestFn: () => Promise<T>, timeoutMs: number = 30000): Promise<T> {
     // Check if request is already in progress
     if (this.requestCache.has(key)) {
       return this.requestCache.get(key)!;
     }
 
-    // Create new request promise
-    const requestPromise = this.executeRequest(requestFn);
+    // Create abort controller for this request
+    const controller = new AbortController();
+    this.abortControllers.set(key, controller);
+
+    // Create new request promise with timeout
+    const requestPromise = this.executeRequest(requestFn, controller, timeoutMs);
     this.requestCache.set(key, requestPromise);
 
     try {
@@ -115,17 +172,30 @@ class RequestQueue {
       return result;
     } finally {
       this.requestCache.delete(key);
+      this.abortControllers.delete(key);
     }
   }
 
-  private async executeRequest<T>(requestFn: () => Promise<T>): Promise<T> {
+  private async executeRequest<T>(
+    requestFn: () => Promise<T>, 
+    controller: AbortController, 
+    timeoutMs: number
+  ): Promise<T> {
     return new Promise((resolve, reject) => {
+      // Set timeout
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        reject(new Error('Request timeout'));
+      }, timeoutMs);
+
       this.queue.push(async () => {
         try {
           this.running++;
           const result = await requestFn();
+          clearTimeout(timeoutId);
           resolve(result);
         } catch (error) {
+          clearTimeout(timeoutId);
           reject(error);
         } finally {
           this.running--;
@@ -138,16 +208,33 @@ class RequestQueue {
   }
 
   private processQueue() {
-    if (this.running < MAX_CONCURRENT_REQUESTS && this.queue.length > 0) {
+    while (this.running < MAX_CONCURRENT_REQUESTS && this.queue.length > 0) {
       const request = this.queue.shift();
       if (request) {
         request();
       }
     }
   }
+
+  cancelRequest(key: string): void {
+    const controller = this.abortControllers.get(key);
+    if (controller) {
+      controller.abort();
+      this.requestCache.delete(key);
+      this.abortControllers.delete(key);
+    }
+  }
+
+  getStats(): { queueLength: number; running: number; cachedRequests: number } {
+    return {
+      queueLength: this.queue.length,
+      running: this.running,
+      cachedRequests: this.requestCache.size
+    };
+  }
 }
 
-const requestQueue = new RequestQueue();
+const requestQueue = new EnhancedRequestQueue();
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -168,6 +255,18 @@ function normalizeCity(city: City): City {
   };
 }
 
+// Memoized city normalization
+const cityNormalizationCache = new MemoizationCache<City>();
+function normalizeCityMemoized(city: City): City {
+  const key = `${city.name}|${city.lat}|${city.lon}`;
+  const cached = cityNormalizationCache.get(key);
+  if (cached) return cached;
+  
+  const normalized = normalizeCity(city);
+  cityNormalizationCache.set(key, normalized);
+  return normalized;
+}
+
 function addWeatherIcons(weather: Weather): WeatherWithIcon {
   return {
     ...weather,
@@ -186,10 +285,10 @@ function addForecastIcons(forecast: Forecast): ForecastWithIcons {
 // CORE API FUNCTIONS
 // ============================================================================
 
-async function makeRequest<T>(url: string): Promise<T> {
+async function makeRequest<T>(url: string, signal?: AbortSignal): Promise<T> {
   try {
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(30000) // 30 second timeout
+      signal: signal || AbortSignal.timeout(30000)
     });
     
     if (!response.ok) {
@@ -207,7 +306,7 @@ async function makeRequest<T>(url: string): Promise<T> {
   } catch (error) {
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        throw new Error('Request timeout - please try again');
+        throw new Error('Request cancelled');
       }
       if (error.message.includes('fetch')) {
         throw new Error('Network error - please check your connection');
@@ -253,7 +352,7 @@ async function fetchLocationData(): Promise<LocationData> {
 }
 
 // ============================================================================
-// CACHED API FUNCTIONS
+// OPTIMIZED CACHED API FUNCTIONS
 // ============================================================================
 
 export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | null> {
@@ -266,7 +365,7 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
     
     // Convert coordinates to numbers if they're strings
     const lat = Number(city.lat);
-    const lon = Number(city.lon);
+    const lon = Number(city.lon || (city as any).lng);
     
     if (isNaN(lat) || isNaN(lon)) {
       console.error('Invalid coordinates for weather fetch:', city);
@@ -278,18 +377,29 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
       return null;
     }
     
-    const normalizedCity = normalizeCity(city);
+    const normalizedCity = normalizeCityMemoized(city);
     const cityKey = `${normalizedCity.name}|${normalizedCity.lat}|${normalizedCity.lon}`;
     
-    // Check cache first
+    // Check memoization cache first
+    const memoized = weatherMemoCache.get(cityKey);
+    if (memoized) {
+      console.log(`Cache hit for ${city.name}`);
+      return memoized;
+    }
+    
+    // Check store cache
     const cacheStats = selectors.getCacheStats();
     const cached = cacheStats.size > 0 ? actions.getWeatherCache(cityKey) : null;
     if (cached?.current_weather) {
       const weatherWithIcons = addWeatherIcons(cached.current_weather);
       if (weatherWithIcons) {
+        weatherMemoCache.set(cityKey, weatherWithIcons);
+        console.log(`Store cache hit for ${city.name}`);
         return weatherWithIcons;
       }
     }
+    
+    console.log(`Fetching weather for ${city.name} (${lat}, ${lon})`);
     
     // Fetch from API
     const weather = await fetchCurrentWeatherRaw(normalizedCity.lat, normalizedCity.lon);
@@ -304,10 +414,13 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
       return null;
     }
     
-    // Cache the result
+    // Add icons and cache
+    const weatherWithIcons = addWeatherIcons(weather);
+    weatherMemoCache.set(cityKey, weatherWithIcons);
     actions.setWeatherCache(cityKey, { current_weather: weather });
     
-    return addWeatherIcons(weather);
+    console.log(`Successfully fetched weather for ${city.name}: ${weather.temperature}°C`);
+    return weatherWithIcons;
   } catch (error) {
     console.error('Error fetching current weather for city:', city?.name, error);
     return null;
@@ -316,23 +429,33 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
 
 export async function getForecast(city: City): Promise<ForecastWithIcons | null> {
   try {
-    const normalizedCity = normalizeCity(city);
+    const normalizedCity = normalizeCityMemoized(city);
     const cityKey = `${normalizedCity.name}|${normalizedCity.lat}|${normalizedCity.lon}`;
     
-    // Check cache first
+    // Check memoization cache first
+    const memoized = forecastMemoCache.get(cityKey);
+    if (memoized) {
+      return memoized;
+    }
+    
+    // Check store cache
     const cached = actions.getWeatherCache(cityKey);
     if (cached?.daily) {
-      return addForecastIcons(cached);
+      const forecastWithIcons = addForecastIcons(cached);
+      forecastMemoCache.set(cityKey, forecastWithIcons);
+      return forecastWithIcons;
     }
     
     // Fetch from API
     const forecast = await fetchForecastRaw(normalizedCity.lat, normalizedCity.lon);
     if (!forecast) return null;
     
-    // Cache the result
+    // Add icons and cache
+    const forecastWithIcons = addForecastIcons(forecast);
+    forecastMemoCache.set(cityKey, forecastWithIcons);
     actions.setWeatherCache(cityKey, forecast);
     
-    return addForecastIcons(forecast);
+    return forecastWithIcons;
   } catch (error) {
     console.error('Error fetching forecast:', error);
     return null;
@@ -341,7 +464,16 @@ export async function getForecast(city: City): Promise<ForecastWithIcons | null>
 
 export async function getLocationForecast(): Promise<{ forecast: ForecastWithIcons; location: string; country: string } | null> {
   try {
-    const locationData = await fetchLocationData();
+    // Check memoization cache
+    const memoizedLocation = locationMemoCache.get('ip_location');
+    let locationData: LocationData;
+    
+    if (memoizedLocation) {
+      locationData = memoizedLocation;
+    } else {
+      locationData = await fetchLocationData();
+      locationMemoCache.set('ip_location', locationData);
+    }
     
     if (!locationData.latitude || !locationData.longitude) {
       throw new Error('No coordinates in location response');
@@ -362,36 +494,149 @@ export async function getLocationForecast(): Promise<{ forecast: ForecastWithIco
 }
 
 // ============================================================================
-// BATCH OPERATIONS
+// PARALLEL BATCH OPERATIONS
 // ============================================================================
 
 export async function getWeatherForCities(cities: City[]): Promise<Record<string, WeatherWithIcon>> {
-  const results: Record<string, WeatherWithIcon> = {};
+  console.log('=== getWeatherForCities called ===');
+  console.log('Input cities:', cities.length);
   
-  // Process cities with controlled concurrency
-  const chunks = [];
-  for (let i = 0; i < cities.length; i += MAX_CONCURRENT_REQUESTS) {
-    chunks.push(cities.slice(i, i + MAX_CONCURRENT_REQUESTS));
+  // Filter out cities with invalid coordinates
+  const validCities = cities.filter(city => {
+    const lat = Number(city.lat);
+    // Try both 'lon' and 'lng' fields for longitude
+    const lon = Number(city.lon || (city as any).lng);
+    const isValid = !isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+    
+    if (!isValid) {
+      console.log(`Invalid coordinates for ${city.name}: lat=${city.lat} (${lat}), lon=${city.lon || (city as any).lng} (${lon})`);
+    }
+    
+    return isValid;
+  });
+  
+  console.log('Valid cities after coordinate validation:', validCities.length);
+  if (validCities.length > 0) {
+    console.log('Sample valid city:', validCities[0]);
   }
   
-  for (const chunk of chunks) {
-    const promises = chunk.map(async (city) => {
-      const normalized = normalizeCity(city);
-      const weather = await getCurrentWeather(normalized);
-      if (weather) {
-        results[normalized.name] = weather;
+  if (validCities.length === 0) {
+    console.log('No valid cities found, returning empty object');
+    return {};
+  }
+  
+  console.log(`Fetching weather for ${validCities.length} cities`);
+  
+  // Process cities in parallel with controlled concurrency
+  const chunks = [];
+  for (let i = 0; i < validCities.length; i += MAX_CONCURRENT_REQUESTS) {
+    chunks.push(validCities.slice(i, i + MAX_CONCURRENT_REQUESTS));
+  }
+  
+  console.log(`Created ${chunks.length} chunks for processing`);
+  
+  // Process chunks sequentially to avoid race conditions
+  const results: Record<string, WeatherWithIcon> = {};
+  
+  for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+    const chunk = chunks[chunkIndex];
+    console.log(`Processing chunk ${chunkIndex + 1}/${chunks.length} with ${chunk.length} cities`);
+    
+    // Process cities in this chunk in parallel
+    const chunkPromises = chunk.map(async (city) => {
+      try {
+        const normalized = normalizeCityMemoized(city);
+        const weather = await getCurrentWeather(normalized);
+        if (weather) {
+          console.log(`Got weather for ${city.name}: ${weather.temperature}°C`);
+          return { cityName: normalized.name, weather };
+        } else {
+          console.log(`No weather returned for ${city.name}`);
+        }
+      } catch (error) {
+        console.error(`Error fetching weather for ${city.name}:`, error);
       }
+      return null;
     });
     
-    await Promise.all(promises);
+    // Wait for all cities in this chunk to complete
+    const chunkResults = await Promise.all(chunkPromises);
+    console.log(`Chunk ${chunkIndex + 1} completed with ${chunkResults.filter(r => r !== null).length} successful results`);
+    
+    // Add successful results to the main results object
+    for (const result of chunkResults) {
+      if (result) {
+        results[result.cityName] = result.weather;
+        console.log(`Added ${result.cityName} to results`);
+      }
+    }
     
     // Add delay between chunks for rate limiting
-    if (chunks.indexOf(chunk) < chunks.length - 1) {
+    if (chunkIndex < chunks.length - 1) {
       await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY_MS));
     }
   }
   
+  console.log(`Successfully fetched weather for ${Object.keys(results).length} cities:`, Object.keys(results));
   return results;
+}
+
+// ============================================================================
+// BACKGROUND PREFETCHING
+// ============================================================================
+
+let prefetchQueue: City[] = [];
+let isPrefetching = false;
+
+export async function prefetchWeatherForCities(cities: City[]): Promise<void> {
+  if (isPrefetching) {
+    // Add to queue if already prefetching
+    prefetchQueue.push(...cities);
+    return;
+  }
+  
+  isPrefetching = true;
+  
+  try {
+    // Process cities in background
+    const validCities = cities.filter(city => {
+      const lat = Number(city.lat);
+      const lon = Number(city.lon || (city as any).lng);
+      return !isNaN(lat) && !isNaN(lon);
+    });
+    
+    if (validCities.length === 0) return;
+    
+    // Use lower concurrency for background prefetching
+    const prefetchConcurrency = Math.min(3, MAX_CONCURRENT_REQUESTS);
+    const chunks = [];
+    for (let i = 0; i < validCities.length; i += prefetchConcurrency) {
+      chunks.push(validCities.slice(i, i + prefetchConcurrency));
+    }
+    
+    for (const chunk of chunks) {
+      const promises = chunk.map(async (city) => {
+        try {
+          const normalized = normalizeCityMemoized(city);
+          await getCurrentWeather(normalized);
+        } catch (error) {
+          // Silently fail for prefetching
+        }
+      });
+      
+      await Promise.all(promises);
+      await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY_MS * 2));
+    }
+  } finally {
+    isPrefetching = false;
+    
+    // Process queued cities
+    if (prefetchQueue.length > 0) {
+      const queuedCities = [...prefetchQueue];
+      prefetchQueue = [];
+      await prefetchWeatherForCities(queuedCities);
+    }
+  }
 }
 
 // ============================================================================
@@ -399,14 +644,40 @@ export async function getWeatherForCities(cities: City[]): Promise<Record<string
 // ============================================================================
 
 export function clearWeatherCache(): void {
+  weatherMemoCache.clear();
+  forecastMemoCache.clear();
+  locationMemoCache.clear();
+  cityNormalizationCache.clear();
   actions.clearWeatherCache();
 }
 
-export function getCacheStats(): { size: number; entries: number } {
-  const stats = selectors.getCacheStats();
+export function getCacheStats(): { 
+  size: number; 
+  entries: number;
+  memoizationStats: {
+    weather: number;
+    forecast: number;
+    location: number;
+    cityNormalization: number;
+  };
+  requestStats: {
+    queueLength: number;
+    running: number;
+    cachedRequests: number;
+  };
+} {
+  const cacheStats = selectors.getCacheStats();
+  
   return {
-    size: stats.totalSize,
-    entries: stats.size
+    size: cacheStats.size,
+    entries: cacheStats.totalSize,
+    memoizationStats: {
+      weather: weatherMemoCache.size(),
+      forecast: forecastMemoCache.size(),
+      location: locationMemoCache.size(),
+      cityNormalization: cityNormalizationCache.size()
+    },
+    requestStats: requestQueue.getStats()
   };
 }
 
@@ -419,5 +690,5 @@ export function createWeatherError(message: string, code: string, details?: any)
 }
 
 export function isWeatherError(error: any): error is WeatherServiceError {
-  return error && typeof error === 'object' && 'code' in error;
+  return error && typeof error === 'object' && 'code' in error && 'message' in error;
 } 

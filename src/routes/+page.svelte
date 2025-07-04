@@ -5,6 +5,7 @@
   import ForecastPanel from '../components/ForecastPanel.svelte';
   import LocationForecastCard from '../components/LocationForecastCard.svelte';
   import ErrorBoundary from '../components/ErrorBoundary.svelte';
+  import PerformanceMonitor from '../components/PerformanceMonitor.svelte';
   import { setupGlobalErrorHandlers, safeAccess, validateWeatherData, validateCityData, validateCountryData } from '../lib/errorBoundary';
   import { 
     selectedCountry, 
@@ -17,8 +18,8 @@
     errors, 
     actions 
   } from '../stores';
-  import { getCurrentWeather, getForecast, getLocationForecast, getWeatherForCities, clearWeatherCache, WEATHER_ICONS } from '../lib/services/weatherService';
-  import { initializeData, fetchCitiesForCountry, normalizeCity } from '../lib/services/dataService';
+  import { getCurrentWeather, getForecast, getLocationForecast, getWeatherForCities, clearWeatherCache, prefetchWeatherForCities, getCacheStats, WEATHER_ICONS } from '../lib/services/weatherService';
+  import { initializeData, fetchCitiesForCountry, normalizeCity, getDataCacheStats } from '../lib/services/dataService';
   import { fly, fade } from 'svelte/transition';
   import { onMount, tick } from 'svelte';
 
@@ -57,12 +58,17 @@
 
   // Fetch weather for all cities in selected country
   async function loadCityWeather() {
+    console.log('loadCityWeather called with countryCities:', countryCities.length);
+    
     if (!countryCities.length) {
+      console.log('No countryCities, returning early');
       return;
     }
     
     try {
       actions.setLoading('weather', true);
+      
+      console.log('Loading weather for cities:', countryCities.length, 'cities');
       
       // Validate cities before fetching weather
       const validCities = countryCities.filter(city => validateCityData(city));
@@ -71,7 +77,13 @@
         return;
       }
       
+      console.log('Valid cities for weather fetch:', validCities.length);
+      console.log('First few cities:', validCities.slice(0, 3).map(c => c.name));
+      
       const weatherResults = await getWeatherForCities(validCities);
+      
+      console.log('Weather results received:', Object.keys(weatherResults).length, 'cities');
+      console.log('Weather results keys:', Object.keys(weatherResults));
       
       // Validate weather results before setting
       const validWeatherResults: Record<string, any> = {};
@@ -81,6 +93,7 @@
         }
       }
       
+      console.log('Setting weather for cities:', Object.keys(validWeatherResults).length);
       actions.setMultipleCityWeather(validWeatherResults);
     } catch (error) {
       console.error('Error loading city weather:', error);
@@ -255,20 +268,48 @@
   }
 
   // Reactively load weather for cities when countryCities changes
-  $: if (countryCities.length > 0) {
+  $: if (countryCities.length > 0 && $selectedCountry) {
     loadCityWeather();
+    
+    // Background prefetching for nearby cities
+    if (countryCities.length > 10) {
+      const nearbyCities = countryCities.slice(0, 20); // Prefetch first 20 cities
+      prefetchWeatherForCities(nearbyCities);
+    }
   }
 
   function clearCache() {
     clearWeatherCache();
   }
+
+  // Performance monitoring
+  function logPerformanceStats() {
+    const weatherStats = getCacheStats();
+    const dataStats = getDataCacheStats();
+    
+    console.log('=== Performance Stats ===');
+    console.log('Weather Cache:', {
+      size: weatherStats.size,
+      entries: weatherStats.entries,
+      memoization: weatherStats.memoizationStats,
+      requests: weatherStats.requestStats
+    });
+    console.log('Data Cache:', {
+      countries: dataStats.countries,
+      cities: dataStats.cities,
+      search: dataStats.search,
+      requests: dataStats.requestStats
+    });
+  }
 </script>
 
 <main>
+  <PerformanceMonitor />
   <ErrorBoundary>
     <h1 in:fly={{ y: -40, duration: 400 }}>Weather App</h1>
     <div style="display: flex; gap: 1em; justify-content: center; margin: 1em 0;">
       <button on:click={clearCache}>Clear Cache</button>
+      <button on:click={logPerformanceStats}>Performance Stats</button>
     </div>
     
     <div class="selectors" in:fade>

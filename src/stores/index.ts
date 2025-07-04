@@ -221,7 +221,7 @@ export const actions = {
   setSelectedCountry: (country: Country | null) => {
     selectedCountry.set(country);
     selectedCity.set(null); // Clear city when country changes
-    cityWeather.set({}); // Clear weather when country changes
+    // Don't clear weather data - let it be updated by the reactive statement
     currentForecast.set(null); // Clear forecast when country changes
   },
 
