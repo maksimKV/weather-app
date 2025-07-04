@@ -16,6 +16,8 @@
     updateDaysToShow();
     window.addEventListener('resize', updateDaysToShow);
   }
+
+  import WeatherCard from './WeatherCard.svelte';
 </script>
 
 {#if forecast}
@@ -29,22 +31,19 @@
     </div>
     <div class="forecast-panel">
       {#each forecast.daily.time.slice(0, daysToShow) as date, i}
-        <div class="day">
-          <div>{new Date(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</div>
-          <img class="big-weather-icon" src={icons[forecast.daily.weathercode[i]] || icons[0]} alt="icon" width="56" height="56" />
-          <div class="temps">
-            <span class="min-temp temp-block">
-              <span class="temp-row"><img class="temp-icon" src="/weather-icons/min-temp.svg" alt="" width="18" height="18" /> {forecast.daily.temperature_2m_min[i]}°C</span>
-              <div class="temp-separator"></div>
-              <span class="temp-row"><img class="temp-icon" src="/weather-icons/min-temp.svg" alt="" width="18" height="18" /> {(forecast.daily.temperature_2m_min[i] * 9/5 + 32).toFixed(1)}°F</span>
-            </span>
-            <span class="max-temp temp-block">
-              <span class="temp-row"><img class="temp-icon" src="/weather-icons/clear-day.svg" alt="" width="18" height="18" /> {forecast.daily.temperature_2m_max[i]}°C</span>
-              <div class="temp-separator"></div>
-              <span class="temp-row"><img class="temp-icon" src="/weather-icons/clear-day.svg" alt="" width="18" height="18" /> {(forecast.daily.temperature_2m_max[i] * 9/5 + 32).toFixed(1)}°F</span>
-            </span>
-          </div>
-        </div>
+        <WeatherCard
+          date={new Date(date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+          mainIcon={icons[forecast.daily.weathercode[i]] || icons[0]}
+          minC={forecast.daily.temperature_2m_min[i]}
+          maxC={forecast.daily.temperature_2m_max[i]}
+          minIcon="/weather-icons/min-temp.svg"
+          maxIcon="/weather-icons/clear-day.svg"
+          mainIconSize={56}
+          textSize="1.1em"
+          minWidth="80px"
+          cardBg="var(--secondary)"
+          cardMargin="0 0.3em"
+        />
       {/each}
     </div>
   </div>
@@ -83,6 +82,7 @@
   gap: 0.7em;
   justify-items: center;
   margin: 0 auto;
+  background: unset;
 }
 @media (max-width: 900px) {
   .forecast-panel {
