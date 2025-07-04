@@ -1,18 +1,21 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import { onMount } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { countries, countriesLoaded } from '../stores';
+  import type { Country, CountrySelectEvent } from '../lib/types';
 
-  export let selected: { countryCode: string; countryName: string } | null = null;
+  export let selected: Country | null = null;
+  
   let search = '';
-  let filtered: { countryCode: string; countryName: string; population?: string }[] = [];
-  const dispatch = createEventDispatcher();
+  let filtered: Country[] = [];
+  const dispatch = createEventDispatcher<{
+    select: Country;
+  }>();
   let dropdownOpen = false;
 
   $: filtered = $countries.filter(c => c.countryName && c.countryName.toLowerCase().startsWith(search.toLowerCase()));
 
-  function selectCountry(country: { countryCode: string; countryName: string; population?: string }) {
-    dispatch('select', { countryCode: country.countryCode, countryName: country.countryName });
+  function selectCountry(country: Country): void {
+    dispatch('select', country);
     search = country.countryName;
     dropdownOpen = false;
   }

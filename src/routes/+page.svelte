@@ -22,6 +22,7 @@
   import { initializeData, fetchCitiesForCountry, normalizeCity, getDataCacheStats } from '../lib/services/dataService';
   import { fly, fade } from 'svelte/transition';
   import { onMount, tick } from 'svelte';
+  import type { City, Country, CountrySelectEvent, CitySelectEvent } from '../lib/types';
 
   // Use weather icons from service
   const iconMap = WEATHER_ICONS;
@@ -57,7 +58,7 @@
   }
 
   // Fetch weather for all cities in selected country
-  async function loadCityWeather() {
+  async function loadCityWeather(): Promise<void> {
     if (!countryCities.length) {
       return;
     }
@@ -92,7 +93,7 @@
   }
 
   // Fetch weather for selected city
-  async function loadSelectedCityWeather() {
+  async function loadSelectedCityWeather(): Promise<void> {
     if (!$selectedCity) return;
     
     try {
@@ -115,7 +116,7 @@
   }
 
   // Fetch forecast for selected city
-  async function loadForecast() {
+  async function loadForecast(): Promise<void> {
     if (!$selectedCity) return;
     
     try {
@@ -145,7 +146,7 @@
   }
 
   // Handle country/city selection
-  async function handleCountrySelect(e) {
+  async function handleCountrySelect(e: CustomEvent<Country>): Promise<void> {
     try {
       // Validate country data
       if (!e.detail || !validateCountryData(e.detail)) {
@@ -177,7 +178,7 @@
     }
   }
 
-  function handleCitySelect(e) {
+  function handleCitySelect(e: CustomEvent<City>): void {
     try {
       const selectedCityData = e.detail;
       
@@ -196,7 +197,7 @@
   }
 
   // IP-based geolocation for user forecast
-  async function detectLocation() {
+  async function detectLocation(): Promise<void> {
     actions.setLoading('location', true);
     actions.setLocationData({ error: null });
     
@@ -266,12 +267,12 @@
     }
   }
 
-  function clearCache() {
+  function clearCache(): void {
     clearWeatherCache();
   }
 
   // Performance monitoring
-  function logPerformanceStats() {
+  function logPerformanceStats(): void {
     const weatherStats = getCacheStats();
     const dataStats = getDataCacheStats();
     
@@ -328,7 +329,7 @@
         zoom={mapZoom}
         selectedCity={$selectedCity}
         weatherByCity={cityWeather}
-        onMarkerClick={(city) => {
+        onMarkerClick={(city: any) => {
           try {
             if (validateCityData(city)) {
               actions.setSelectedCity(city);

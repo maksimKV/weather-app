@@ -1,30 +1,31 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  import { onMount } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { cities, citiesLoaded } from '../stores';
+  import type { City, CitySelectEvent } from '../lib/types';
 
-  export let selected: { name: string; lat: number; lon: number; country: string } | null = null;
+  export let selected: City | null = null;
   export let country: string | null = null;
-  export let clearTrigger: number = 0; // New prop to trigger clearing
+  export let clearTrigger: number = 0;
+  
   let search = '';
-  let filtered: any[] = [];
-  const dispatch = createEventDispatcher();
+  let filtered: City[] = [];
+  const dispatch = createEventDispatcher<{
+    select: City;
+  }>();
   let dropdownOpen = false;
   let loading = false;
   let useCache = false;
-  let lastSearch = ''; // Track the last search to prevent infinite loops
+  let lastSearch = '';
 
-  // Watch for cache readiness
-  $: useCache = $citiesLoaded && $cities.length > 1000; // Lowered threshold for better search experience
+  $: useCache = $citiesLoaded && $cities.length > 1000;
 
-  // On-demand search function
-  async function searchCities(query: string) {
+  async function searchCities(query: string): Promise<void> {
     if (!query || query.length < 2) {
       filtered = [];
       return;
     }
     loading = true;
-    let url = `/api/cities?q=${encodeURIComponent(query)}&maxRows=50`; // Increased from 20 to get more suggestions
+    let url = `/api/cities?q=${encodeURIComponent(query)}&maxRows=50`;
     try {
       const res = await fetch(url);
       const data = await res.json();
@@ -36,17 +37,14 @@
     loading = false;
   }
 
-  // Reactively update filtered cities
   $: if (search && search.length >= 2 && search !== lastSearch) {
     lastSearch = search;
     if (useCache) {
-      // Use local cache - search all cities regardless of country selection
       const searchLower = search.toLowerCase();
       filtered = $cities.filter(c =>
         c.name && c.name.toLowerCase().startsWith(searchLower)
       ).slice(0, 20);
     } else {
-      // Use API search - don't pass country parameter to allow global search
       searchCities(search);
     }
   } else if (!search || search.length < 2) {
@@ -54,12 +52,12 @@
     lastSearch = '';
   }
 
-  function selectCity(city: any) {
-    const cityData = {
+  function selectCity(city: City): void {
+    const cityData: City = {
       name: city.name,
       lat: city.lat,
-      lon: city.lon ?? city.lng,
-      country: city.countryCode ?? city.country
+      lon: city.lon ?? city.lng ?? 0,
+      country: city.countryCode ?? city.country ?? 'Unknown'
     };
     dispatch('select', cityData);
     search = city.name;
@@ -70,21 +68,16 @@
     if (selected) search = selected.name;
   });
 
-  // Clear search when selected city is cleared
   $: if (!selected) {
     search = '';
     filtered = [];
     lastSearch = '';
   }
-
-  // Clear search when clearTrigger changes
   $: if (clearTrigger > 0) {
     search = '';
     filtered = [];
     lastSearch = '';
   }
-
-
 </script>
 
 <div class="city-selector">
