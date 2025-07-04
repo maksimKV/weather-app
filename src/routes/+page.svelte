@@ -238,7 +238,7 @@ h1 {
   text-align: center;
   font-size: 1.2em;
   font-weight: 600;
-  margin-bottom: 0.5em;
+  margin-bottom: 0;
   color: var(--primary);
 }
 </style>

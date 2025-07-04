@@ -42,7 +42,7 @@
   display: flex;
   gap: 1em;
   justify-content: center;
-  margin: 1em 0;
+  margin-bottom: 1em;
   flex-wrap: wrap;
 }
 .day {

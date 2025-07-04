@@ -24,10 +24,7 @@
   <div class="location-forecast">
     <div class="location-heading">
       <span class="location-label">Your Current Location:</span>
-      <span class="location-city">{location}</span>
-      {#if country}
-        <span class="location-city">, {country}</span>
-      {/if}
+      <span class="location-city">{location}{country ? `, ${country}` : ''}</span>
     </div>
     <div class="forecast-panel">
       {#each forecast.daily.time.slice(0, daysToShow) as date, i}
