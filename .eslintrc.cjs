@@ -1,23 +1,45 @@
 module.exports = {
   root: true,
-  parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint', 'prettier'],
   extends: [
     'eslint:recommended',
-    'plugin:@typescript-eslint/recommended',
-    'plugin:prettier/recommended'
+    '@typescript-eslint/recommended',
+    'plugin:svelte/recommended',
+    'prettier'
   ],
+  parser: '@typescript-eslint/parser',
+  plugins: ['@typescript-eslint', 'svelte', 'prettier'],
+  parserOptions: {
+    sourceType: 'module',
+    ecmaVersion: 2020,
+    extraFileExtensions: ['.svelte']
+  },
+  env: {
+    browser: true,
+    es2017: true,
+    node: true
+  },
   overrides: [
     {
       files: ['*.svelte'],
-      processor: 'svelte3/svelte3',
-      rules: {}
+      parser: 'svelte-eslint-parser',
+      parserOptions: {
+        parser: '@typescript-eslint/parser'
+      }
     }
   ],
-  env: {
-    browser: true,
-    es2021: true,
-    node: true
+  rules: {
+    'prettier/prettier': 'error',
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'warn',
+    'no-console': 'warn',
+    'prefer-const': 'error',
+    'no-var': 'error',
+    'svelte/valid-compile': 'error'
   },
-  ignorePatterns: ['node_modules/', 'build/', '.svelte-kit/', 'static/'],
+  settings: {
+    'svelte3/typescript': () => require('typescript')
+  }
 }; 
