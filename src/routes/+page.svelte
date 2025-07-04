@@ -4,6 +4,8 @@
   import MapView from '../components/MapView.svelte';
   import ForecastPanel from '../components/ForecastPanel.svelte';
   import LocationForecastCard from '../components/LocationForecastCard.svelte';
+  import ErrorBoundary from '../components/ErrorBoundary.svelte';
+  import { setupGlobalErrorHandlers, safeAccess, validateWeatherData, validateCityData, validateCountryData } from '../lib/errorBoundary';
   import { 
     selectedCountry, 
     selectedCity, 
@@ -16,7 +18,7 @@
     actions 
   } from '../stores';
   import { getCurrentWeather, getForecast, getLocationForecast, getWeatherForCities, clearWeatherCache, WEATHER_ICONS } from '../lib/services/weatherService';
-  import { initializeData, fetchCitiesForCountry } from '../lib/services/dataService';
+  import { initializeData, fetchCitiesForCountry, normalizeCity } from '../lib/services/dataService';
   import { fly, fade } from 'svelte/transition';
   import { onMount, tick } from 'svelte';
 
@@ -58,66 +60,138 @@
     if (!countryCities.length) {
       return;
     }
-    actions.setLoading('weather', true);
     
-    const weatherResults = await getWeatherForCities(countryCities);
-    actions.setMultipleCityWeather(weatherResults);
-    
-    actions.setLoading('weather', false);
+    try {
+      actions.setLoading('weather', true);
+      
+      // Validate cities before fetching weather
+      const validCities = countryCities.filter(city => validateCityData(city));
+      if (validCities.length === 0) {
+        console.warn('No valid cities found for weather fetch');
+        return;
+      }
+      
+      const weatherResults = await getWeatherForCities(validCities);
+      
+      // Validate weather results before setting
+      const validWeatherResults: Record<string, any> = {};
+      for (const [cityName, weather] of Object.entries(weatherResults)) {
+        if (weather && typeof weather === 'object') {
+          validWeatherResults[cityName] = weather;
+        }
+      }
+      
+      actions.setMultipleCityWeather(validWeatherResults);
+    } catch (error) {
+      console.error('Error loading city weather:', error);
+      actions.setError('weather', error instanceof Error ? error.message : 'Failed to load weather');
+    } finally {
+      actions.setLoading('weather', false);
+    }
   }
 
   // Fetch weather for selected city
   async function loadSelectedCityWeather() {
     if (!$selectedCity) return;
     
-    const weather = await getCurrentWeather($selectedCity);
-    if (weather) {
-      actions.setCityWeather($selectedCity.name, weather);
+    try {
+      // Validate city data before fetching weather
+      if (!validateCityData($selectedCity)) {
+        console.warn('Invalid city data for weather fetch:', $selectedCity);
+        return;
+      }
+      
+      const weather = await getCurrentWeather(normalizeCity($selectedCity));
+      if (weather && validateWeatherData(weather)) {
+        actions.setCityWeather($selectedCity.name, weather);
+      } else {
+        console.warn('Invalid weather data received for city:', $selectedCity.name);
+      }
+    } catch (error) {
+      console.error('Error loading selected city weather:', error);
+      actions.setError('weather', error instanceof Error ? error.message : 'Failed to load city weather');
     }
   }
 
   // Fetch forecast for selected city
   async function loadForecast() {
     if (!$selectedCity) return;
-    actions.setLoading('forecast', true);
     
     try {
+      actions.setLoading('forecast', true);
+      
+      // Validate city data before fetching forecast
+      if (!validateCityData($selectedCity)) {
+        console.warn('Invalid city data for forecast fetch:', $selectedCity);
+        actions.setCurrentForecast(null);
+        return;
+      }
+      
       const forecastData = await getForecast($selectedCity);
-      actions.setCurrentForecast(forecastData);
+      if (forecastData && validateWeatherData(forecastData)) {
+        actions.setCurrentForecast(forecastData);
+      } else {
+        console.warn('Invalid forecast data received for city:', $selectedCity.name);
+        actions.setCurrentForecast(null);
+      }
     } catch (error) {
       console.error('Error loading forecast:', error);
       actions.setCurrentForecast(null);
+      actions.setError('weather', error instanceof Error ? error.message : 'Failed to load forecast');
+    } finally {
+      actions.setLoading('forecast', false);
     }
-    
-    actions.setLoading('forecast', false);
   }
 
   // Handle country/city selection
   async function handleCountrySelect(e) {
-    actions.setSelectedCountry(e.detail);
-    cityManuallySelected = false;
-    
-    // Increment the clear counter to trigger CitySelector to clear
-    clearCityInput++;
-    
-    await tick();
-    
-    // If no cities found for this country, fetch additional cities
-    if (countryCities.length === 0) {
-      await fetchCitiesForCountry(e.detail.countryCode);
-      await tick(); // Wait for cities to update
-    }
-    
-    // Load weather for cities
-    if (countryCities.length > 0) {
-      loadCityWeather();
+    try {
+      // Validate country data
+      if (!e.detail || !validateCountryData(e.detail)) {
+        console.warn('Invalid country data received:', e.detail);
+        return;
+      }
+      
+      actions.setSelectedCountry(e.detail);
+      cityManuallySelected = false;
+      
+      // Increment the clear counter to trigger CitySelector to clear
+      clearCityInput++;
+      
+      await tick();
+      
+      // If no cities found for this country, fetch additional cities
+      if (countryCities.length === 0) {
+        await fetchCitiesForCountry(e.detail.countryCode);
+        await tick(); // Wait for cities to update
+      }
+      
+      // Load weather for cities
+      if (countryCities.length > 0) {
+        loadCityWeather();
+      }
+    } catch (error) {
+      console.error('Error handling country selection:', error);
+      actions.setError('cities', error instanceof Error ? error.message : 'Failed to load country data');
     }
   }
 
   function handleCitySelect(e) {
-    const selectedCityData = e.detail;
-    actions.setSelectedCity(selectedCityData);
-    cityManuallySelected = true;
+    try {
+      const selectedCityData = e.detail;
+      
+      // Validate city data
+      if (!selectedCityData || !validateCityData(selectedCityData)) {
+        console.warn('Invalid city data received:', selectedCityData);
+        return;
+      }
+      
+      actions.setSelectedCity(selectedCityData);
+      cityManuallySelected = true;
+    } catch (error) {
+      console.error('Error handling city selection:', error);
+      actions.setError('weather', error instanceof Error ? error.message : 'Failed to select city');
+    }
   }
 
   // IP-based geolocation for user forecast
@@ -152,18 +226,26 @@
   }
 
   onMount(async () => {
-    // Initialize data
-    await initializeData();
+    // Setup global error handlers
+    setupGlobalErrorHandlers();
     
-    // If no city has been manually selected this session, reset selectedCity to null
-    if (!cityManuallySelected) {
-      actions.setSelectedCity(null);
+    try {
+      // Initialize data
+      await initializeData();
+      
+      // If no city has been manually selected this session, reset selectedCity to null
+      if (!cityManuallySelected) {
+        actions.setSelectedCity(null);
+      }
+      
+      // Add a small delay to ensure cities are loaded before geolocation
+      setTimeout(() => {
+        detectLocation();
+      }, 500);
+    } catch (error) {
+      console.error('Failed to initialize app:', error);
+      // The error will be handled by the error boundary
     }
-    
-    // Add a small delay to ensure cities are loaded before geolocation
-    setTimeout(() => {
-      detectLocation();
-    }, 500);
   });
 
   // Reactively load forecast when selectedCity changes
@@ -183,15 +265,21 @@
 </script>
 
 <main>
-  <h1 in:fly={{ y: -40, duration: 400 }}>Weather App</h1>
-  <div style="display: flex; gap: 1em; justify-content: center; margin: 1em 0;">
-    <button on:click={clearCache}>Clear Cache</button>
-  </div>
-  
-  <div class="selectors" in:fade>
-    <CountrySelector selected={$selectedCountry} on:select={handleCountrySelect} />
-    <CitySelector selected={$selectedCity} country={$selectedCountry?.countryCode || null} clearTrigger={clearCityInput} on:select={handleCitySelect} />
-  </div>
+  <ErrorBoundary>
+    <h1 in:fly={{ y: -40, duration: 400 }}>Weather App</h1>
+    <div style="display: flex; gap: 1em; justify-content: center; margin: 1em 0;">
+      <button on:click={clearCache}>Clear Cache</button>
+    </div>
+    
+    <div class="selectors" in:fade>
+      <ErrorBoundary>
+        <CountrySelector selected={$selectedCountry} on:select={handleCountrySelect} />
+      </ErrorBoundary>
+      <ErrorBoundary>
+        <CitySelector selected={$selectedCity} country={$selectedCountry?.countryCode || null} clearTrigger={clearCityInput} on:select={handleCitySelect} />
+      </ErrorBoundary>
+    </div>
+  </ErrorBoundary>
   
   {#if $errors.countries || $errors.cities}
     <div class="error-message" in:fade>
@@ -200,57 +288,73 @@
     </div>
   {/if}
 
-  <div class="map-section" in:fade>
-    {#if loadingCities}
-      <p>Loading city weather...</p>
-    {/if}
-    <MapView
-      cities={countryCities}
-      center={mapCenter}
-      zoom={mapZoom}
-      selectedCity={$selectedCity}
-      weatherByCity={cityWeather}
-      onMarkerClick={(city) => {
-        actions.setSelectedCity(city);
-        cityManuallySelected = true;
-      }}
-    />
-  </div>
+  <ErrorBoundary>
+    <div class="map-section" in:fade>
+      {#if loadingCities}
+        <p>Loading city weather...</p>
+      {/if}
+      <MapView
+        cities={countryCities}
+        center={mapCenter}
+        zoom={mapZoom}
+        selectedCity={$selectedCity}
+        weatherByCity={cityWeather}
+        onMarkerClick={(city) => {
+          try {
+            if (validateCityData(city)) {
+              actions.setSelectedCity(city);
+              cityManuallySelected = true;
+            } else {
+              console.warn('Invalid city data in marker click:', city);
+            }
+          } catch (error) {
+            console.error('Error handling marker click:', error);
+          }
+        }}
+      />
+    </div>
+  </ErrorBoundary>
 
-  <div class="forecast-section" in:fade>
-    {#if $selectedCity && cityManuallySelected}
-      {#if loadingForecast}
+  <ErrorBoundary>
+    <div class="forecast-section" in:fade>
+      {#if $selectedCity && cityManuallySelected}
+        {#if loadingForecast}
+          <div class="loading-message">
+            <div class="loading-spinner"></div>
+            <p>Loading forecast for {$selectedCity.name}...</p>
+          </div>
+        {:else if forecast && validateWeatherData(forecast)}
+          <div class="city-forecast-title">
+            Weather in {$selectedCity.name}
+          </div>
+          <ErrorBoundary>
+            <ForecastPanel {forecast} />
+          </ErrorBoundary>
+        {:else}
+          <div class="loading-message">
+            <p>No forecast data available for {$selectedCity.name}</p>
+          </div>
+        {/if}
+      {/if}
+      {#if loadingLocationForecast}
         <div class="loading-message">
           <div class="loading-spinner"></div>
-          <p>Loading forecast for {$selectedCity.name}...</p>
+          <p>Loading your location weather...</p>
         </div>
-      {:else if forecast}
-        <div class="city-forecast-title">
-          Weather in {$selectedCity.name}
-        </div>
-        <ForecastPanel {forecast} />
-      {:else}
-        <div class="loading-message">
-          <p>No forecast data available for {$selectedCity.name}</p>
+      {:else if locationForecast && validateWeatherData(locationForecast)}
+        <ErrorBoundary>
+          <LocationForecastCard forecast={locationForecast} location={locationName} country={locationCountry} />
+        </ErrorBoundary>
+      {:else if locationError}
+        <div class="error-message" in:fade>
+          <p>⚠️ {locationError}</p>
+          <p class="error-help">
+            💡 Unable to determine your location automatically. You can still select cities and countries manually to get weather information.
+          </p>
         </div>
       {/if}
-    {/if}
-    {#if loadingLocationForecast}
-      <div class="loading-message">
-        <div class="loading-spinner"></div>
-        <p>Loading your location weather...</p>
-      </div>
-    {:else if locationForecast}
-      <LocationForecastCard forecast={locationForecast} location={locationName} country={locationCountry} />
-    {:else if locationError}
-      <div class="error-message" in:fade>
-        <p>⚠️ {locationError}</p>
-        <p class="error-help">
-          💡 Unable to determine your location automatically. You can still select cities and countries manually to get weather information.
-        </p>
-      </div>
-    {/if}
-  </div>
+    </div>
+  </ErrorBoundary>
 </main>
 
 <style>

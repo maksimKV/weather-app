@@ -12,7 +12,7 @@
   $: filtered = $countries.filter(c => c.countryName && c.countryName.toLowerCase().startsWith(search.toLowerCase()));
 
   function selectCountry(country: { countryCode: string; countryName: string; population?: string }) {
-    dispatch('select', { code: country.countryCode, name: country.countryName });
+    dispatch('select', { countryCode: country.countryCode, countryName: country.countryName });
     search = country.countryName;
     dropdownOpen = false;
   }

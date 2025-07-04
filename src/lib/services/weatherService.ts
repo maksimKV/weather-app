@@ -187,13 +187,34 @@ function addForecastIcons(forecast: Forecast): ForecastWithIcons {
 // ============================================================================
 
 async function makeRequest<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(30000) // 30 second timeout
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Validate response data
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format from API');
+    }
+    
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout - please try again');
+      }
+      if (error.message.includes('fetch')) {
+        throw new Error('Network error - please check your connection');
+      }
+    }
+    throw error;
   }
-  
-  return response.json();
 }
 
 async function fetchCurrentWeatherRaw(lat: number, lon: number): Promise<Weather | null> {
@@ -237,6 +258,26 @@ async function fetchLocationData(): Promise<LocationData> {
 
 export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | null> {
   try {
+    // Validate city data
+    if (!city) {
+      console.error('No city data provided for weather fetch');
+      return null;
+    }
+    
+    // Convert coordinates to numbers if they're strings
+    const lat = Number(city.lat);
+    const lon = Number(city.lon);
+    
+    if (isNaN(lat) || isNaN(lon)) {
+      console.error('Invalid coordinates for weather fetch:', city);
+      return null;
+    }
+    
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      console.error('Coordinates out of valid range:', { lat, lon });
+      return null;
+    }
+    
     const normalizedCity = normalizeCity(city);
     const cityKey = `${normalizedCity.name}|${normalizedCity.lat}|${normalizedCity.lon}`;
     
@@ -244,19 +285,31 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
     const cacheStats = selectors.getCacheStats();
     const cached = cacheStats.size > 0 ? actions.getWeatherCache(cityKey) : null;
     if (cached?.current_weather) {
-      return addWeatherIcons(cached.current_weather);
+      const weatherWithIcons = addWeatherIcons(cached.current_weather);
+      if (weatherWithIcons) {
+        return weatherWithIcons;
+      }
     }
     
     // Fetch from API
     const weather = await fetchCurrentWeatherRaw(normalizedCity.lat, normalizedCity.lon);
-    if (!weather) return null;
+    if (!weather) {
+      console.warn('No weather data received for city:', city.name);
+      return null;
+    }
+    
+    // Validate weather data
+    if (!weather.temperature || typeof weather.temperature !== 'number') {
+      console.error('Invalid weather data received:', weather);
+      return null;
+    }
     
     // Cache the result
     actions.setWeatherCache(cityKey, { current_weather: weather });
     
     return addWeatherIcons(weather);
   } catch (error) {
-    console.error('Error fetching current weather:', error);
+    console.error('Error fetching current weather for city:', city?.name, error);
     return null;
   }
 }
@@ -323,9 +376,10 @@ export async function getWeatherForCities(cities: City[]): Promise<Record<string
   
   for (const chunk of chunks) {
     const promises = chunk.map(async (city) => {
-      const weather = await getCurrentWeather(city);
+      const normalized = normalizeCity(city);
+      const weather = await getCurrentWeather(normalized);
       if (weather) {
-        results[city.name] = weather;
+        results[normalized.name] = weather;
       }
     });
     

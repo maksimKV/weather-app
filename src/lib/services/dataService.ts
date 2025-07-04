@@ -36,13 +36,34 @@ const REQUEST_DELAY_MS = 100;
 // ============================================================================
 
 async function makeRequest<T>(url: string): Promise<T> {
-  const response = await fetch(url);
-  
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(30000) // 30 second timeout
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    
+    // Validate response data
+    if (!data) {
+      throw new Error('Empty response from API');
+    }
+    
+    return data;
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout - please try again');
+      }
+      if (error.message.includes('fetch')) {
+        throw new Error('Network error - please check your connection');
+      }
+    }
+    throw error;
   }
-  
-  return response.json();
 }
 
 // ============================================================================
@@ -56,15 +77,36 @@ export async function fetchCountries(): Promise<Country[]> {
     
     const countries = await makeRequest<Country[]>('/api/countries');
     
-    // Cache in sessionStorage for faster subsequent loads
-    sessionStorage.setItem('countries', JSON.stringify(countries));
+    // Validate countries data
+    if (!Array.isArray(countries)) {
+      throw new Error('Invalid countries data format');
+    }
     
-    actions.setCountries(countries);
-    return countries;
+    const validCountries = countries.filter(country => 
+      country && 
+      typeof country.countryCode === 'string' && 
+      typeof country.countryName === 'string'
+    );
+    
+    if (validCountries.length === 0) {
+      throw new Error('No valid countries found in response');
+    }
+    
+    // Cache in sessionStorage for faster subsequent loads
+    try {
+      sessionStorage.setItem('countries', JSON.stringify(validCountries));
+    } catch (storageError) {
+      console.warn('Failed to cache countries in sessionStorage:', storageError);
+    }
+    
+    actions.setCountries(validCountries);
+    return validCountries;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch countries';
     actions.setError('countries', errorMessage);
     throw error;
+  } finally {
+    actions.setLoading('countries', false);
   }
 }
 
@@ -126,14 +168,16 @@ async function fetchCitiesInBatches(): Promise<City[]> {
       
       if (Array.isArray(batch) && batch.length > 0) {
         // Normalize city data
-        const normalizedBatch = batch.map((city: any) => ({
-          name: city.name,
-          lat: city.lat,
-          lon: city.lon || city.lng,
-          country: city.country,
-          countryCode: city.countryCode,
-          geonameId: city.geonameId
-        }));
+        const normalizedBatch = batch
+          .map((city: any) => ({
+            name: city.name,
+            lat: Number(city.lat),
+            lon: Number(city.lon ?? city.lng),
+            country: city.country,
+            countryCode: city.countryCode,
+            geonameId: city.geonameId
+          }))
+          .filter(city => !isNaN(city.lat) && !isNaN(city.lon));
         
         allCities = allCities.concat(normalizedBatch);
         startRow += BATCH_SIZE;
@@ -172,14 +216,16 @@ export async function fetchCitiesForCountry(countryCode: string): Promise<City[]
     
     if (Array.isArray(citiesData)) {
       // Normalize city data
-      const normalizedCities = citiesData.map((city: any) => ({
-        name: city.name,
-        lat: city.lat,
-        lon: city.lon || city.lng,
-        country: city.country,
-        countryCode: city.countryCode,
-        geonameId: city.geonameId
-      }));
+      const normalizedCities = citiesData
+        .map((city: any) => ({
+          name: city.name,
+          lat: Number(city.lat),
+          lon: Number(city.lon ?? city.lng),
+          country: city.country,
+          countryCode: city.countryCode,
+          geonameId: city.geonameId
+        }))
+        .filter(city => !isNaN(city.lat) && !isNaN(city.lon));
       
       // Add to existing cities store
       actions.addCities(normalizedCities);
@@ -205,14 +251,16 @@ export async function searchCities(query: string, countryCode?: string): Promise
     
     if (Array.isArray(citiesData)) {
       // Normalize city data
-      return citiesData.map((city: any) => ({
-        name: city.name,
-        lat: city.lat,
-        lon: city.lon || city.lng,
-        country: city.country,
-        countryCode: city.countryCode,
-        geonameId: city.geonameId
-      }));
+      return citiesData
+        .map((city: any) => ({
+          name: city.name,
+          lat: Number(city.lat),
+          lon: Number(city.lon ?? city.lng),
+          country: city.country,
+          countryCode: city.countryCode,
+          geonameId: city.geonameId
+        }))
+        .filter(city => !isNaN(city.lat) && !isNaN(city.lon));
     }
     
     return [];
@@ -267,8 +315,8 @@ export async function initializeData(): Promise<void> {
 export function normalizeCity(city: any): City {
   return {
     name: city.name,
-    lat: city.lat,
-    lon: city.lon || city.lng,
+    lat: Number(city.lat),
+    lon: Number(city.lon ?? city.lng),
     country: city.country,
     countryCode: city.countryCode,
     geonameId: city.geonameId

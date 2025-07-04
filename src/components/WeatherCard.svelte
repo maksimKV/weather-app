@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { safeCall } from '../lib/errorBoundary';
+
   export let date: string;
   export let mainIcon: string;
   export let minC: number;
@@ -11,21 +13,33 @@
   export let minWidth: string = '80px';
   export let cardBg: string = 'var(--secondary)';
   export let cardMargin: string = '0 0.3em';
+
+  // Validate and sanitize inputs
+  $: safeMinC = safeCall(() => Number(minC) || 0, 0);
+  $: safeMaxC = safeCall(() => Number(maxC) || 0, 0);
+  $: safeDate = safeCall(() => String(date || ''), 'Unknown');
+  $: safeMainIcon = safeCall(() => String(mainIcon || '/weather-icons/unknown.svg'), '/weather-icons/unknown.svg');
+  $: safeMinIcon = safeCall(() => String(minIcon || '/weather-icons/min-temp.svg'), '/weather-icons/min-temp.svg');
+  $: safeMaxIcon = safeCall(() => String(maxIcon || '/weather-icons/clear-day.svg'), '/weather-icons/clear-day.svg');
+  
+  // Calculate Fahrenheit safely
+  $: minF = safeCall(() => (safeMinC * 9/5 + 32).toFixed(1), '0.0');
+  $: maxF = safeCall(() => (safeMaxC * 9/5 + 32).toFixed(1), '0.0');
 </script>
 
 <div class="day" style="margin: {cardMargin}; font-size: {textSize}; min-width: {minWidth}; background: {cardBg};">
-  <div>{date}</div>
-  <img class="big-weather-icon" src={mainIcon} alt="icon" width={mainIconSize} height={mainIconSize} />
+  <div>{safeDate}</div>
+  <img class="big-weather-icon" src={safeMainIcon} alt="weather icon" width={mainIconSize} height={mainIconSize} on:error={() => safeMainIcon = '/weather-icons/unknown.svg'} />
   <div class="temps">
     <span class="min-temp temp-block">
-      <span class="temp-row"><img class="temp-icon" src={minIcon} alt="" width="18" height="18" /> {minC}°C</span>
+      <span class="temp-row"><img class="temp-icon" src={safeMinIcon} alt="min temp" width="18" height="18" on:error={() => safeMinIcon = '/weather-icons/min-temp.svg'} /> {safeMinC}°C</span>
       <div class="temp-separator"></div>
-      <span class="temp-row"><img class="temp-icon" src={minIcon} alt="" width="18" height="18" /> {(minC * 9/5 + 32).toFixed(1)}°F</span>
+      <span class="temp-row"><img class="temp-icon" src={safeMinIcon} alt="min temp" width="18" height="18" on:error={() => safeMinIcon = '/weather-icons/min-temp.svg'} /> {minF}°F</span>
     </span>
     <span class="max-temp temp-block">
-      <span class="temp-row"><img class="temp-icon" src={maxIcon} alt="" width="18" height="18" /> {maxC}°C</span>
+      <span class="temp-row"><img class="temp-icon" src={safeMaxIcon} alt="max temp" width="18" height="18" on:error={() => safeMaxIcon = '/weather-icons/clear-day.svg'} /> {safeMaxC}°C</span>
       <div class="temp-separator"></div>
-      <span class="temp-row"><img class="temp-icon" src={maxIcon} alt="" width="18" height="18" /> {(maxC * 9/5 + 32).toFixed(1)}°F</span>
+      <span class="temp-row"><img class="temp-icon" src={safeMaxIcon} alt="max temp" width="18" height="18" on:error={() => safeMaxIcon = '/weather-icons/clear-day.svg'} /> {maxF}°F</span>
     </span>
   </div>
 </div>

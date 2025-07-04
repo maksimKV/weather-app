@@ -11,12 +11,60 @@ export async function GET() {
   }
   
   try {
-    const res = await fetch(`http://api.geonames.org/countryInfoJSON?username=${username}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
+    const res = await fetch(`http://api.geonames.org/countryInfoJSON?username=${username}`, {
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!res.ok) {
+      throw new Error(`GeoNames API responded with status ${res.status}: ${res.statusText}`);
+    }
+    
     const data = await res.json();
-    return json(data.geonames); // array of countries
+    
+    // Validate response structure
+    if (!data || !data.geonames || !Array.isArray(data.geonames)) {
+      throw new Error('Invalid response format from GeoNames API');
+    }
+    
+    // Filter out invalid countries
+    const validCountries = data.geonames.filter((country: any) => 
+      country && 
+      country.countryCode && 
+      country.countryName &&
+      typeof country.countryCode === 'string' &&
+      typeof country.countryName === 'string'
+    );
+    
+    if (validCountries.length === 0) {
+      throw new Error('No valid countries found in GeoNames response');
+    }
+    
+    return json(validCountries);
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Failed to fetch countries from GeoNames API' }), {
-      status: 500,
+    console.error('Countries API error:', error);
+    
+    let errorMessage = 'Failed to fetch countries from GeoNames API';
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timeout - please try again';
+        statusCode = 408;
+      } else if (error.message.includes('fetch')) {
+        errorMessage = 'Network error - please check your connection';
+        statusCode = 503;
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: statusCode,
       headers: { 'Content-Type': 'application/json' }
     });
   }

@@ -16,16 +16,80 @@ export async function GET({ url }) {
   const startRow = url.searchParams.get('startRow') || '0';
 
   try {
+    // Validate parameters
+    const maxRowsNum = parseInt(maxRows);
+    const startRowNum = parseInt(startRow);
+    
+    if (isNaN(maxRowsNum) || maxRowsNum < 1 || maxRowsNum > 1000) {
+      return new Response(JSON.stringify({ error: 'Invalid maxRows parameter (must be 1-1000)' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    if (isNaN(startRowNum) || startRowNum < 0) {
+      return new Response(JSON.stringify({ error: 'Invalid startRow parameter (must be >= 0)' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
     let apiUrl = `http://api.geonames.org/searchJSON?featureClass=P&maxRows=${maxRows}&startRow=${startRow}&username=${username}`;
     if (q) apiUrl += `&name_startsWith=${encodeURIComponent(q)}`;
     if (country) apiUrl += `&country=${encodeURIComponent(country)}`;
 
-    const res = await fetch(apiUrl);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
+    const res = await fetch(apiUrl, {
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!res.ok) {
+      throw new Error(`GeoNames API responded with status ${res.status}: ${res.statusText}`);
+    }
+    
     const data = await res.json();
-    return json(data.geonames); // array of cities
+    
+    // Validate response structure
+    if (!data || !data.geonames || !Array.isArray(data.geonames)) {
+      throw new Error('Invalid response format from GeoNames API');
+    }
+    
+    // Filter out invalid cities
+    const validCities = data.geonames.filter((city: any) => 
+      city && 
+      city.name && 
+      city.lat && 
+      city.lng &&
+      typeof city.name === 'string' &&
+      typeof city.lat === 'number' &&
+      typeof city.lng === 'number'
+    );
+    
+    return json(validCities);
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Failed to fetch cities from GeoNames API' }), {
-      status: 500,
+    console.error('Cities API error:', error);
+    
+    let errorMessage = 'Failed to fetch cities from GeoNames API';
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timeout - please try again';
+        statusCode = 408;
+      } else if (error.message.includes('fetch')) {
+        errorMessage = 'Network error - please check your connection';
+        statusCode = 503;
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: statusCode,
       headers: { 'Content-Type': 'application/json' }
     });
   }
