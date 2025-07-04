@@ -43,7 +43,7 @@
         ${weather ? `<span>${weather.temperature}°C</span><img src="${weather.icon}" alt="icon" width="24" height="24" />` : ''}
       `;
       const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([city.lon, city.lat])
+        .setLngLat([city.lng || city.lon, city.lat])
         .addTo(map);
       markers.push(marker);
     }
@@ -66,12 +66,12 @@
     addMarkers();
   }
   $: if (map && selectedCity) {
-    map.flyTo({ center: [selectedCity.lon, selectedCity.lat], zoom: 8 });
+    map.flyTo({ center: [selectedCity.lng || selectedCity.lon, selectedCity.lat], zoom: 8 });
   } else if (map && cities.length) {
     // Fit map to all city markers (country)
     const bounds = new maplibregl.LngLatBounds();
     for (const city of cities) {
-      bounds.extend([city.lon, city.lat]);
+      bounds.extend([city.lng || city.lon, city.lat]);
     }
     if (!bounds.isEmpty()) {
       map.fitBounds(bounds, { padding: 120, duration: 800 });

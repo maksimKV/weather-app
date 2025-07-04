@@ -1,23 +1,27 @@
 <script lang="ts">
-  import { cities } from '../lib/cities';
-  import type { City } from '../lib/cities';
   import { createEventDispatcher } from 'svelte';
   import { onMount } from 'svelte';
+  import { cities, citiesLoaded } from '../stores/countryCityStore';
 
-  export let selected: City | null = null;
+  export let selected: { name: string; lat: number; lon: number; country: string } | null = null;
   export let country: string | null = null;
   let search = '';
-  let filtered: City[] = [];
+  let filtered: { name: string; lat: number; lon: number; country: string }[] = [];
   const dispatch = createEventDispatcher();
   let dropdownOpen = false;
 
-  $: filtered = cities.filter(c =>
-    (!country || c.country === country) &&
-    c.name.toLowerCase().includes(search.toLowerCase())
+  $: filtered = $cities.filter(c =>
+    (!country || c.countryCode === country) &&
+    c.name && c.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  function selectCity(city: City) {
-    dispatch('select', city);
+  function selectCity(city: any) {
+    dispatch('select', { 
+      name: city.name, 
+      lat: city.lat, 
+      lon: city.lon, 
+      country: city.countryCode 
+    });
     search = city.name;
     dropdownOpen = false;
   }
@@ -32,8 +36,11 @@
     on:focus={() => dropdownOpen = true}
     on:input={() => dropdownOpen = true}
     on:blur={() => setTimeout(() => dropdownOpen = false, 100)}
+    disabled={!$citiesLoaded}
   />
-  {#if dropdownOpen && search && filtered.length}
+  {#if !$citiesLoaded}
+    <div>Loading cities...</div>
+  {:else if dropdownOpen}
     <ul>
       {#each filtered as city}
         <button type="button" on:click={() => selectCity(city)}>{city.name}</button>
