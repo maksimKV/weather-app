@@ -38,6 +38,9 @@ export interface LocationData {
   name: string;
   country: string;
   error: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  country_code: string;
 }
 
 export interface LoadingState {
@@ -74,6 +77,9 @@ export const locationData = writable<LocationData>({
   name: '',
   country: '',
   error: null,
+  latitude: null,
+  longitude: null,
+  country_code: ''
 });
 
 // Loading States
@@ -92,6 +98,9 @@ export const errors = writable<ErrorState>({
   weather: null,
   location: null,
 });
+
+// New store for geolocated city
+export const geolocatedCity = writable<City | null>(null);
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -193,6 +202,19 @@ export const currentSelection = derived(
     city: $selectedCity,
     hasSelection: !!(selectedCountry || selectedCity),
   })
+);
+
+// New derived store isSelectedCityGeolocated
+export const isSelectedCityGeolocated = derived(
+  [selectedCity, geolocatedCity],
+  ([$selectedCity, $geolocatedCity]) => {
+    if (!$selectedCity || !$geolocatedCity) {
+      return false;
+    }
+    const latEqual = Math.abs(Number($selectedCity.lat) - Number($geolocatedCity.lat)) < 0.0001;
+    const lonEqual = Math.abs(Number($selectedCity.lon) - Number($geolocatedCity.lon)) < 0.0001;
+    return latEqual && lonEqual;
+  }
 );
 
 // ============================================================================
@@ -381,6 +403,9 @@ export const actions = {
       name: '',
       country: '',
       error: null,
+      latitude: null,
+      longitude: null,
+      country_code: ''
     });
     actions.clearErrors();
   },

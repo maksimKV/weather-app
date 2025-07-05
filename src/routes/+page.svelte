@@ -23,6 +23,8 @@
     loading,
     errors,
     actions,
+    geolocatedCity,
+    isSelectedCityGeolocated,
   } from '../stores';
   import {
     getCurrentWeather,
@@ -266,16 +268,26 @@
           longitude: locationData.longitude,
           country_code: locationData.country_code
         });
+        // Store the original geolocated city
+        geolocatedCity.set({
+          lat: locationData.latitude,
+          lon: locationData.longitude,
+          name: locationData.location,
+          country: locationData.country,
+          countryCode: locationData.country_code
+        });
       } else {
         throw new Error('Failed to fetch location forecast');
       }
     } catch (error) {
-      console.error('IP geolocation failed:', error);
       actions.setLocationData({
         forecast: null,
         name: 'Location unavailable',
         country: '',
         error: 'Unable to determine your location. Please select a city manually.',
+        latitude: null,
+        longitude: null,
+        country_code: ''
       });
     }
 
@@ -345,6 +357,15 @@
       requests: dataStats.requestStats,
     });
   }
+
+  function isSelectedCitySameAsGeolocated() {
+    if (!$selectedCity || !$geolocatedCity) {
+      return false;
+    }
+    const latEqual = Math.abs(Number($selectedCity.lat) - Number($geolocatedCity.lat)) < 0.0001;
+    const lonEqual = Math.abs(Number($selectedCity.lon) - Number($geolocatedCity.lon)) < 0.0001;
+    return latEqual && lonEqual;
+  }
 </script>
 
 <main>
@@ -409,69 +430,71 @@
   </ErrorBoundary>
 
   <ErrorBoundary>
-    <div class="forecast-section" in:fade>
-      {#if $selectedCity && cityManuallySelected}
-        <!-- City selected - show forecast panel -->
-        {#if loadingForecast}
-          <div class="loading-message">
-            <div class="loading-spinner"></div>
-            <p>Loading forecast for {$selectedCity.name}...</p>
-          </div>
-        {:else if forecast && validateWeatherData(forecast)}
-          <div class="city-forecast-title">
-            Weather in {$selectedCity.name}
-          </div>
-          <ErrorBoundary>
-            <ForecastPanel {forecast} />
-          </ErrorBoundary>
-        {:else}
-          <div class="loading-message">
-            <p>No forecast data available for {$selectedCity.name}</p>
-          </div>
-        {/if}
-      {:else if $selectedCountry && countryCities.length > 0}
-        <!-- Country selected but no city - show temperature chart -->
-        <ErrorBoundary>
-          <CountryWeatherChart
-            cities={countryCities}
-            weatherData={cityWeather}
-            countryName={$selectedCountry.countryName}
-            height="400px"
-            maxCities={15}
-          />
-        </ErrorBoundary>
-      {/if}
+    {#if loadingLocationForecast}
+      <div class="loading-message">
+        <div class="loading-spinner"></div>
+        <p>Loading your location weather...</p>
+      </div>
+    {:else if locationForecast && validateWeatherData(locationForecast)}
+      <LocationForecastCard
+        forecast={locationForecast}
+        location={locationName}
+        country={locationCountry}
+        lat={$locationData.latitude}
+        lon={$locationData.longitude}
+        countryCode={$locationData.country_code}
+        on:select={e => {
+          actions.setSelectedCity(e.detail);
+          cityManuallySelected = true;
+        }}
+      />
+    {:else if locationError}
+      <div class="error-message" in:fade>
+        <p>⚠️ {locationError}</p>
+        <p class="error-help">
+          💡 Unable to determine your location automatically. You can still select cities and
+          countries manually to get weather information.
+        </p>
+      </div>
+    {/if}
+  </ErrorBoundary>
 
-      {#if loadingLocationForecast}
-        <div class="loading-message">
-          <div class="loading-spinner"></div>
-          <p>Loading your location weather...</p>
-        </div>
-      {:else if locationForecast && validateWeatherData(locationForecast)}
-        <ErrorBoundary>
-          <LocationForecastCard
-            forecast={locationForecast}
-            location={locationName}
-            country={locationCountry}
-            lat={$locationData.latitude}
-            lon={$locationData.longitude}
-            countryCode={$locationData.country_code}
-            on:select={e => {
-              actions.setSelectedCity(e.detail);
-              cityManuallySelected = true;
-            }}
-          />
-        </ErrorBoundary>
-      {:else if locationError}
-        <div class="error-message" in:fade>
-          <p>⚠️ {locationError}</p>
-          <p class="error-help">
-            💡 Unable to determine your location automatically. You can still select cities and
-            countries manually to get weather information.
-          </p>
-        </div>
-      {/if}
-    </div>
+  <ErrorBoundary>
+    {#if !$isSelectedCityGeolocated}
+      <div class="forecast-section" in:fade>
+        {#if $selectedCity && cityManuallySelected}
+          <!-- City selected - show forecast panel -->
+          {#if loadingForecast}
+            <div class="loading-message">
+              <div class="loading-spinner"></div>
+              <p>Loading forecast for {$selectedCity.name}...</p>
+            </div>
+          {:else if forecast && validateWeatherData(forecast)}
+            <div class="city-forecast-title">
+              Weather in {$selectedCity.name}
+            </div>
+            <ErrorBoundary>
+              <ForecastPanel {forecast} />
+            </ErrorBoundary>
+          {:else}
+            <div class="loading-message">
+              <p>No forecast data available for {$selectedCity.name}</p>
+            </div>
+          {/if}
+        {:else if $selectedCountry && countryCities.length > 0}
+          <!-- Country selected but no city - show temperature chart -->
+          <ErrorBoundary>
+            <CountryWeatherChart
+              cities={countryCities}
+              weatherData={cityWeather}
+              countryName={$selectedCountry.countryName}
+              height="400px"
+              maxCities={15}
+            />
+          </ErrorBoundary>
+        {/if}
+      </div>
+    {/if}
   </ErrorBoundary>
 </main>
 
