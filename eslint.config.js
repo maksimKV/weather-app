@@ -57,6 +57,7 @@ export default [
         Blob: 'readonly',
         CustomEvent: 'readonly',
         HTMLDivElement: 'readonly',
+        HTMLCanvasElement: 'readonly',
       },
     },
     plugins: {
@@ -124,6 +125,7 @@ export default [
         Blob: 'readonly',
         CustomEvent: 'readonly',
         HTMLDivElement: 'readonly',
+        HTMLCanvasElement: 'readonly',
       },
     },
     plugins: {
