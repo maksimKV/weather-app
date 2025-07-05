@@ -90,4 +90,15 @@
       grid-template-columns: repeat(2, 1fr);
     }
   }
+  @media (max-width: 450px) {
+    .forecast-panel {
+      grid-template-columns: 1fr;
+    }
+    .location-forecast {
+      padding: 0.5em;
+    }
+    .location-heading {
+      font-size: 1em;
+    }
+  }
 </style>
