@@ -43,6 +43,9 @@ export interface LocationData {
   name: string;
   country: string;
   error: string | null;
+  latitude?: number;
+  longitude?: number;
+  country_code?: string;
 }
 
 // ============================================================================

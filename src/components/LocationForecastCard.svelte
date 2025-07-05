@@ -1,9 +1,15 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
   export let forecast: any = null;
   export let location: string = '';
   export let country: string = '';
+  export let lat: number | undefined;
+  export let lon: number | undefined;
+  export let countryCode: string | undefined;
 
   let daysToShow = 10;
+
+  const dispatch = createEventDispatcher();
 
   function updateDaysToShow() {
     if (window.innerWidth < 500) daysToShow = 4;
@@ -17,11 +23,27 @@
   }
 
   import WeatherCard from './WeatherCard.svelte';
+
+  function handleLocationClick() {
+    if (lat == null || lon == null) {
+      return;
+    }
+    const cityObj = {
+      name: location,
+      lat,
+      lon,
+      country: country || 'Unknown',
+      countryCode: countryCode || '',
+      geonameId: undefined,
+      population: undefined
+    };
+    dispatch('select', cityObj);
+  }
 </script>
 
 {#if forecast}
   <div class="location-forecast">
-    <div class="location-heading">
+    <div class="location-heading clickable" role="button" tabindex="0" title="Show on map" on:click={handleLocationClick}>
       <span class="location-label">Your Current Location:</span>
       <span class="location-city">{location}{country ? `, ${country}` : ''}</span>
     </div>
@@ -71,6 +93,15 @@
   .location-city {
     font-weight: 700;
     color: var(--primary);
+  }
+  .location-heading.clickable {
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .location-heading.clickable:hover,
+  .location-heading.clickable:focus {
+    background: #f0f4ff;
+    outline: 2px solid var(--primary);
   }
   .forecast-panel {
     display: grid;

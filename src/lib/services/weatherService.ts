@@ -42,6 +42,7 @@ export interface LocationData {
   longitude: number;
   city?: string;
   country_name?: string;
+  country_code?: string;
 }
 
 export interface WeatherServiceError {
@@ -483,6 +484,9 @@ export async function getLocationForecast(): Promise<{
   forecast: ForecastWithIcons;
   location: string;
   country: string;
+  latitude: number;
+  longitude: number;
+  country_code?: string;
 } | null> {
   try {
     // Check memoization cache
@@ -507,10 +511,11 @@ export async function getLocationForecast(): Promise<{
       forecast: addForecastIcons(forecast),
       location: locationData.city || 'Your Location (Approximate)',
       country: locationData.country_name || '',
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
+      country_code: locationData.country_code
     };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_error) {
-    // console.error('Error fetching location forecast:', _error);
     return null;
   }
 }

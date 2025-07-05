@@ -262,6 +262,9 @@
           name: locationData.location,
           country: locationData.country,
           error: null,
+          latitude: locationData.latitude,
+          longitude: locationData.longitude,
+          country_code: locationData.country_code
         });
       } else {
         throw new Error('Failed to fetch location forecast');
@@ -450,6 +453,13 @@
             forecast={locationForecast}
             location={locationName}
             country={locationCountry}
+            lat={$locationData.latitude}
+            lon={$locationData.longitude}
+            countryCode={$locationData.country_code}
+            on:select={e => {
+              actions.setSelectedCity(e.detail);
+              cityManuallySelected = true;
+            }}
           />
         </ErrorBoundary>
       {:else if locationError}
