@@ -3,6 +3,13 @@
   import { cities, citiesLoaded } from '../stores';
   import type { City } from '../lib/types';
   import { logDevError, isCity } from '../lib/utils';
+  import {
+    UI_CONFIG,
+    VALIDATION_CONFIG,
+    CACHE_THRESHOLDS,
+    ERROR_MESSAGES,
+    API_CONFIG,
+  } from '../lib/constants';
 
   export let selected: City | null = null;
   export let clearTrigger: number = 0;
@@ -18,7 +25,7 @@
   let useCache = false;
   let lastSearch = '';
 
-  $: useCache = $citiesLoaded && $cities.length > 1000;
+  $: useCache = $citiesLoaded && $cities.length > CACHE_THRESHOLDS.CITIES_CACHE_MIN;
 
   // Runtime validation
   if (selected !== null && !isCity(selected)) {
@@ -32,24 +39,24 @@
   }
 
   async function searchCities(query: string): Promise<void> {
-    if (!query || query.length < 2) {
+    if (!query || query.length < VALIDATION_CONFIG.MIN_SEARCH_LENGTH) {
       filtered = [];
       return;
     }
     loading = true;
-    let url = `/api/cities?q=${encodeURIComponent(query)}&maxRows=50`;
+    let url = `/api/cities?q=${encodeURIComponent(query)}&maxRows=${API_CONFIG.MAX_ROWS}`;
     try {
       const res = await fetch(url);
       const data = await res.json();
       filtered = Array.isArray(data) ? data : [];
     } catch (error) {
-      logDevError('Error searching cities:', error);
+      logDevError(ERROR_MESSAGES.GENERAL.SEARCH_FAILED, error);
       filtered = [];
     }
     loading = false;
   }
 
-  $: if (search && search.length >= 2 && search !== lastSearch) {
+  $: if (search && search.length >= VALIDATION_CONFIG.MIN_SEARCH_LENGTH && search !== lastSearch) {
     lastSearch = search;
     if (useCache) {
       const searchLower = search.toLowerCase();
@@ -60,11 +67,11 @@
             c.name.toLowerCase().startsWith(searchLower) &&
             (!country || c.countryCode === country)
         )
-        .slice(0, 20);
+        .slice(0, VALIDATION_CONFIG.MAX_SEARCH_RESULTS);
     } else {
       searchCities(search);
     }
-  } else if (!search || search.length < 2) {
+  } else if (!search || search.length < VALIDATION_CONFIG.MIN_SEARCH_LENGTH) {
     filtered = [];
     lastSearch = '';
   }
@@ -104,7 +111,7 @@
     bind:value={search}
     on:focus={() => (dropdownOpen = true)}
     on:input={() => (dropdownOpen = true)}
-    on:blur={() => setTimeout(() => (dropdownOpen = false), 200)}
+    on:blur={() => setTimeout(() => (dropdownOpen = false), UI_CONFIG.DROPDOWN_DELAY)}
     disabled={!$citiesLoaded && !useCache}
     autocomplete="off"
   />

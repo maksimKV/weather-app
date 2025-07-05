@@ -17,7 +17,12 @@
   if (!isValidCityArray(cities)) {
     logDevError('Invalid cities prop passed to MapView:', cities);
   }
-  if (!Array.isArray(center) || center.length !== 2 || typeof center[0] !== 'number' || typeof center[1] !== 'number') {
+  if (
+    !Array.isArray(center) ||
+    center.length !== 2 ||
+    typeof center[0] !== 'number' ||
+    typeof center[1] !== 'number'
+  ) {
     logDevError('Invalid center prop passed to MapView:', center);
   }
   if (typeof zoom !== 'number') {

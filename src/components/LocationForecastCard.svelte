@@ -1,7 +1,14 @@
 <script lang="ts">
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import WeatherCard from './WeatherCard.svelte';
-  import { getDaysToShow, createResizeHandler, formatDate, normalizeCity, isValidWeatherData, logDevError } from '../lib/utils';
+  import {
+    getDaysToShow,
+    createResizeHandler,
+    formatDate,
+    normalizeCity,
+    isValidWeatherData,
+    logDevError,
+  } from '../lib/utils';
   import type { WeatherData, City } from '../lib/types';
 
   export let forecast: WeatherData | null = null;

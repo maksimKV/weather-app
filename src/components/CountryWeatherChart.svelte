@@ -5,14 +5,15 @@
   import { Chart, registerables } from 'chart.js';
   import type { City, ChartContainer } from '../lib/types';
   import { logDevError, isValidCityArray } from '../lib/utils';
+  import { UI_CONFIG, COLORS, WEATHER_THRESHOLDS } from '../lib/constants';
 
   // Register all Chart.js components
   Chart.register(...registerables);
 
   export let cities: City[] = [];
   export let weatherData: Record<string, { temperature: number; icon: string }> = {};
-  export let height: string = '300px';
-  export let maxCities: number = 12;
+  export let height: string = UI_CONFIG.CHART_HEIGHT;
+  export let maxCities: number = UI_CONFIG.MAX_CHART_CITIES;
   export let countryName: string = '';
 
   if (!isValidCityArray(cities)) {
@@ -31,55 +32,11 @@
     logDevError('Invalid countryName prop passed to CountryWeatherChart:', countryName);
   }
 
-  let chartContainer: ChartContainer;
   let chart: Chart | null = null;
+  let chartContainer: ChartContainer | null = null;
   let chartId = `country-chart-${Math.random().toString(36).substr(2, 9)}`;
-  let isDestroyed = false; // Track if component is being destroyed
-  let pendingChartCreation: number | null = null; // Track pending chart creation
-  let lastDataHash = ''; // Track data changes to prevent unnecessary updates
-
-  // Create a hash of the current data to detect significant changes
-  function createDataHash(): string {
-    try {
-      const citiesWithWeather = cities
-        .filter(city => weatherData[city.name] && weatherData[city.name].temperature !== undefined)
-        .slice(0, maxCities);
-
-      return JSON.stringify({
-        cities: citiesWithWeather.map(c => ({ name: c.name, lat: c.lat, lon: c.lon })),
-        temperatures: citiesWithWeather.map(c => weatherData[c.name].temperature),
-        maxCities,
-        countryName,
-      });
-    } catch (error) {
-      logDevError('Error creating data hash:', error);
-      return '';
-    }
-  }
-
-  // Enhanced cleanup function with error handling
-  function destroyChart(): void {
-    try {
-      if (chart && !isDestroyed) {
-        chart.destroy();
-        chart = null;
-        // Remove debug log to reduce console noise
-        // logDevError('Chart destroyed successfully');
-      }
-    } catch (error) {
-      logDevError('Error destroying chart:', error);
-      // Force null even if destroy fails
-      chart = null;
-    }
-  }
-
-  // Cancel any pending chart creation
-  function cancelPendingChartCreation(): void {
-    if (pendingChartCreation !== null) {
-      clearTimeout(pendingChartCreation);
-      pendingChartCreation = null;
-    }
-  }
+  let isDestroyed = false;
+  let pendingChartCreation: number | null = null;
 
   function transformCityDataForChart() {
     try {
@@ -94,10 +51,10 @@
 
       // Color coding based on temperature
       const colors = temperatures.map(temp => {
-        if (temp >= 25) return '#f44336'; // Hot - Red
-        if (temp >= 15) return '#ff9800'; // Warm - Orange
-        if (temp >= 5) return '#2196f3'; // Cool - Blue
-        return '#3f51b5'; // Cold - Indigo
+        if (temp >= WEATHER_THRESHOLDS.TEMPERATURE.HOT) return COLORS.TEMPERATURE.HOT;
+        if (temp >= WEATHER_THRESHOLDS.TEMPERATURE.WARM) return COLORS.TEMPERATURE.WARM;
+        if (temp >= WEATHER_THRESHOLDS.TEMPERATURE.COOL) return COLORS.TEMPERATURE.COOL;
+        return COLORS.TEMPERATURE.COLD;
       });
 
       return {
@@ -111,7 +68,7 @@
             borderWidth: 2,
             borderRadius: 6,
             borderSkipped: false,
-            maxBarThickness: 50,
+            maxBarThickness: UI_CONFIG.CHART_MAX_BAR_THICKNESS,
           },
         ],
       };
@@ -156,10 +113,10 @@
               display: false,
             },
             tooltip: {
-              backgroundColor: 'rgba(0, 0, 0, 0.9)',
+              backgroundColor: COLORS.CHART.BACKGROUND,
               titleColor: '#fff',
               bodyColor: '#fff',
-              borderColor: '#666',
+              borderColor: COLORS.CHART.BORDER,
               borderWidth: 1,
               cornerRadius: 8,
               padding: 12,
@@ -184,7 +141,7 @@
                   size: 14,
                   weight: 'bold',
                 },
-                color: '#333',
+                color: COLORS.UI.TEXT_PRIMARY,
               },
               grid: {
                 display: false,
@@ -206,15 +163,12 @@
                   size: 14,
                   weight: 'bold',
                 },
-                color: '#333',
+                color: COLORS.UI.TEXT_PRIMARY,
               },
               grid: {
-                color: 'rgba(0, 0, 0, 0.1)',
+                color: COLORS.CHART.GRID,
               },
               ticks: {
-                callback: function (value) {
-                  return `${value}°C`;
-                },
                 font: {
                   size: 11,
                 },
@@ -256,19 +210,45 @@
     }
   }
 
-  // Debounced chart creation to handle rapid changes
-  function scheduleChartCreation(): void {
-    cancelPendingChartCreation();
+  // Enhanced cleanup function with error handling
+  function destroyChart(): void {
+    try {
+      if (chart && !isDestroyed) {
+        chart.destroy();
+        chart = null;
+      }
+    } catch (error) {
+      logDevError('Error destroying chart:', error);
+      chart = null;
+    }
+  }
 
-    if (isDestroyed) return;
+  // Debounce chart creation to handle rapid changes
+  if (pendingChartCreation !== null) {
+    clearTimeout(pendingChartCreation);
+  }
+
+  pendingChartCreation = setTimeout(() => {
+    try {
+      createChart();
+    } catch (error) {
+      logDevError('Error updating chart:', error);
+    }
+  }, UI_CONFIG.CHART_DEBOUNCE);
+
+  // Debounced chart update for data changes
+  $: if (cities.length > 0 && Object.keys(weatherData).length > 0) {
+    if (pendingChartCreation !== null) {
+      clearTimeout(pendingChartCreation);
+    }
 
     pendingChartCreation = setTimeout(() => {
-      // Double-check if component is still alive before creating chart
-      if (!isDestroyed && chartContainer) {
-        createChart();
+      try {
+        updateChart();
+      } catch (error) {
+        logDevError('Error updating chart:', error);
       }
-      pendingChartCreation = null;
-    }, 100); // 100ms debounce
+    }, UI_CONFIG.CHART_UPDATE_DELAY);
   }
 
   onMount(() => {
@@ -289,7 +269,6 @@
   onDestroy(() => {
     try {
       isDestroyed = true;
-      cancelPendingChartCreation();
       destroyChart();
       // Remove the debug log to reduce console noise
       // logDevError('Component destroyed, cleanup completed');
@@ -300,20 +279,18 @@
 
   // Reactive cleanup and chart management
   $: if (!isDestroyed && cities.length > 0 && Object.keys(weatherData).length > 0) {
-    const currentDataHash = createDataHash();
-
-    // Only update if data has actually changed significantly
-    if (currentDataHash !== lastDataHash) {
-      lastDataHash = currentDataHash;
-
-      if (chart) {
-        // Update existing chart
-        updateChart();
-      } else {
-        // Create new chart if none exists
-        scheduleChartCreation();
-      }
+    // Debounce chart creation to handle rapid changes
+    if (pendingChartCreation !== null) {
+      clearTimeout(pendingChartCreation);
     }
+
+    pendingChartCreation = setTimeout(() => {
+      try {
+        createChart();
+      } catch (error) {
+        logDevError('Error updating chart:', error);
+      }
+    }, UI_CONFIG.CHART_DEBOUNCE);
   }
 
   // Handle component updates more safely - remove duplicate reactive statement

@@ -7,6 +7,7 @@
     celsiusToFahrenheit,
     logDevError,
   } from '../lib/utils';
+  import { UI_CONFIG, ICON_PATHS, WEATHER_THRESHOLDS } from '../lib/constants';
 
   export let date: string;
   export let mainIcon: string;
@@ -14,66 +15,79 @@
   export let maxC: number;
   export let minIcon: string;
   export let maxIcon: string;
-  export let mainIconSize: number = 56;
-  export let textSize: string = '1em';
-  export let minWidth: string = '80px';
-  export let cardBg: string = 'var(--secondary)';
-  export let cardMargin: string = '0 0.3em';
+  export let mainIconSize: number = UI_CONFIG.DEFAULT_ICON_SIZE;
+  export let textSize: string = UI_CONFIG.DEFAULT_TEXT_SIZE;
+  export let minWidth: string = UI_CONFIG.DEFAULT_MIN_WIDTH;
+  export let cardBg: string = UI_CONFIG.DEFAULT_CARD_BG;
+  export let cardMargin: string = UI_CONFIG.DEFAULT_CARD_MARGIN;
   export let humidity: number | undefined;
   export let sunrise: string | undefined;
   export let sunset: string | undefined;
   export let uvIndex: number | undefined;
 
   if (typeof date !== 'string') logDevError('Invalid date prop passed to WeatherCard:', date);
-  if (typeof mainIcon !== 'string') logDevError('Invalid mainIcon prop passed to WeatherCard:', mainIcon);
+  if (typeof mainIcon !== 'string')
+    logDevError('Invalid mainIcon prop passed to WeatherCard:', mainIcon);
   if (typeof minC !== 'number') logDevError('Invalid minC prop passed to WeatherCard:', minC);
   if (typeof maxC !== 'number') logDevError('Invalid maxC prop passed to WeatherCard:', maxC);
-  if (typeof minIcon !== 'string') logDevError('Invalid minIcon prop passed to WeatherCard:', minIcon);
-  if (typeof maxIcon !== 'string') logDevError('Invalid maxIcon prop passed to WeatherCard:', maxIcon);
-  if (typeof mainIconSize !== 'number') logDevError('Invalid mainIconSize prop passed to WeatherCard:', mainIconSize);
-  if (typeof textSize !== 'string') logDevError('Invalid textSize prop passed to WeatherCard:', textSize);
-  if (typeof minWidth !== 'string') logDevError('Invalid minWidth prop passed to WeatherCard:', minWidth);
+  if (typeof minIcon !== 'string')
+    logDevError('Invalid minIcon prop passed to WeatherCard:', minIcon);
+  if (typeof maxIcon !== 'string')
+    logDevError('Invalid maxIcon prop passed to WeatherCard:', maxIcon);
+  if (typeof mainIconSize !== 'number')
+    logDevError('Invalid mainIconSize prop passed to WeatherCard:', mainIconSize);
+  if (typeof textSize !== 'string')
+    logDevError('Invalid textSize prop passed to WeatherCard:', textSize);
+  if (typeof minWidth !== 'string')
+    logDevError('Invalid minWidth prop passed to WeatherCard:', minWidth);
   if (typeof cardBg !== 'string') logDevError('Invalid cardBg prop passed to WeatherCard:', cardBg);
-  if (typeof cardMargin !== 'string') logDevError('Invalid cardMargin prop passed to WeatherCard:', cardMargin);
-  if (humidity !== undefined && typeof humidity !== 'number') logDevError('Invalid humidity prop passed to WeatherCard:', humidity);
-  if (sunrise !== undefined && typeof sunrise !== 'string') logDevError('Invalid sunrise prop passed to WeatherCard:', sunrise);
-  if (sunset !== undefined && typeof sunset !== 'string') logDevError('Invalid sunset prop passed to WeatherCard:', sunset);
-  if (uvIndex !== undefined && typeof uvIndex !== 'number') logDevError('Invalid uvIndex prop passed to WeatherCard:', uvIndex);
+  if (typeof cardMargin !== 'string')
+    logDevError('Invalid cardMargin prop passed to WeatherCard:', cardMargin);
+  if (humidity !== undefined && typeof humidity !== 'number')
+    logDevError('Invalid humidity prop passed to WeatherCard:', humidity);
+  if (sunrise !== undefined && typeof sunrise !== 'string')
+    logDevError('Invalid sunrise prop passed to WeatherCard:', sunrise);
+  if (sunset !== undefined && typeof sunset !== 'string')
+    logDevError('Invalid sunset prop passed to WeatherCard:', sunset);
+  if (uvIndex !== undefined && typeof uvIndex !== 'number')
+    logDevError('Invalid uvIndex prop passed to WeatherCard:', uvIndex);
 
-  // Validate and sanitize inputs
-  $: safeMinC = safeCall(() => Number(minC) || 0, 0);
-  $: safeMaxC = safeCall(() => Number(maxC) || 0, 0);
-  $: safeDate = safeCall(() => String(date || ''), 'Unknown');
-  $: safeMainIcon = safeCall(
-    () => String(mainIcon || '/weather-icons/unknown.svg'),
-    '/weather-icons/unknown.svg'
-  );
-  $: safeMinIcon = safeCall(
-    () => String(minIcon || '/weather-icons/min-temp.svg'),
-    '/weather-icons/min-temp.svg'
-  );
-  $: safeMaxIcon = safeCall(
-    () => String(maxIcon || '/weather-icons/clear-day.svg'),
-    '/weather-icons/clear-day.svg'
-  );
+  // Optimized safe value calculations - consolidate related calculations
+  $: safeValues = {
+    minC: safeCall(() => Number(minC) || 0, 0),
+    maxC: safeCall(() => Number(maxC) || 0, 0),
+    date: safeCall(() => String(date || ''), 'Unknown'),
+    mainIcon: safeCall(
+      () => String(mainIcon || ICON_PATHS.WEATHER.UNKNOWN),
+      ICON_PATHS.WEATHER.UNKNOWN
+    ),
+    minIcon: safeCall(
+      () => String(minIcon || ICON_PATHS.WEATHER.MIN_TEMP),
+      ICON_PATHS.WEATHER.MIN_TEMP
+    ),
+    maxIcon: safeCall(
+      () => String(maxIcon || ICON_PATHS.WEATHER.CLEAR_DAY),
+      ICON_PATHS.WEATHER.CLEAR_DAY
+    ),
+  };
 
   // Calculate Fahrenheit safely using shared utility
-  $: minF = safeCall(() => celsiusToFahrenheit(safeMinC), '0.0');
-  $: maxF = safeCall(() => celsiusToFahrenheit(safeMaxC), '0.0');
+  $: minF = safeCall(() => celsiusToFahrenheit(safeValues.minC), '0.0');
+  $: maxF = safeCall(() => celsiusToFahrenheit(safeValues.maxC), '0.0');
 </script>
 
 <div
   class="day"
   style="margin: {cardMargin}; font-size: {textSize}; min-width: {minWidth}; background: {cardBg};"
 >
-  <div>{safeDate}</div>
+  <div>{safeValues.date}</div>
   <img
     class="big-weather-icon"
-    src={safeMainIcon}
+    src={safeValues.mainIcon}
     alt="weather icon"
     width={mainIconSize}
     height={mainIconSize}
-    on:error={() => (safeMainIcon = '/weather-icons/unknown.svg')}
+    on:error={() => (safeValues.mainIcon = ICON_PATHS.WEATHER.UNKNOWN)}
   />
   <div class="weather-columns">
     <div class="weather-col">
@@ -81,23 +95,23 @@
         <span class="temp-row">
           <img
             class="temp-icon"
-            src={safeMinIcon}
+            src={safeValues.minIcon}
             alt="min temp"
             width="18"
             height="18"
-            on:error={() => (safeMinIcon = '/weather-icons/min-temp.svg')}
+            on:error={() => (safeValues.minIcon = ICON_PATHS.WEATHER.MIN_TEMP)}
           />
-          {safeMinC}°C
+          {safeValues.minC}°C
         </span>
         <div class="temp-separator"></div>
         <span class="temp-row">
           <img
             class="temp-icon"
-            src={safeMinIcon}
+            src={safeValues.minIcon}
             alt="min temp"
             width="18"
             height="18"
-            on:error={() => (safeMinIcon = '/weather-icons/min-temp.svg')}
+            on:error={() => (safeValues.minIcon = ICON_PATHS.WEATHER.MIN_TEMP)}
           />
           {minF}°F
         </span>
@@ -106,10 +120,10 @@
         <span class="temp-row">
           <img
             class="temp-icon"
-            src="/weather-icons/sunrise.svg"
+            src={ICON_PATHS.WEATHER.SUNRISE}
             alt="sunrise"
-            width="18"
-            height="18"
+            width={UI_CONFIG.ICON_SIZE_SMALL}
+            height={UI_CONFIG.ICON_SIZE_SMALL}
           />
           <span class="sunrise-time">{sunrise.slice(11, 16)}</span>
         </span>
@@ -120,23 +134,23 @@
         <span class="temp-row">
           <img
             class="temp-icon"
-            src={safeMaxIcon}
+            src={safeValues.maxIcon}
             alt="max temp"
-            width="18"
-            height="18"
-            on:error={() => (safeMaxIcon = '/weather-icons/clear-day.svg')}
+            width={UI_CONFIG.ICON_SIZE_SMALL}
+            height={UI_CONFIG.ICON_SIZE_SMALL}
+            on:error={() => (safeValues.maxIcon = ICON_PATHS.WEATHER.CLEAR_DAY)}
           />
-          {safeMaxC}°C
+          {safeValues.maxC}°C
         </span>
         <div class="temp-separator"></div>
         <span class="temp-row">
           <img
             class="temp-icon"
-            src={safeMaxIcon}
+            src={safeValues.maxIcon}
             alt="max temp"
-            width="18"
-            height="18"
-            on:error={() => (safeMaxIcon = '/weather-icons/clear-day.svg')}
+            width={UI_CONFIG.ICON_SIZE_SMALL}
+            height={UI_CONFIG.ICON_SIZE_SMALL}
+            on:error={() => (safeValues.maxIcon = ICON_PATHS.WEATHER.CLEAR_DAY)}
           />
           {maxF}°F
         </span>
@@ -145,10 +159,10 @@
         <span class="temp-row">
           <img
             class="temp-icon"
-            src="/weather-icons/sunset.svg"
+            src={ICON_PATHS.WEATHER.SUNSET}
             alt="sunset"
-            width="18"
-            height="18"
+            width={UI_CONFIG.ICON_SIZE_SMALL}
+            height={UI_CONFIG.ICON_SIZE_SMALL}
           />
           <span class="sunset-time">{sunset.slice(11, 16)}</span>
         </span>
@@ -162,10 +176,10 @@
           <span class="detail-item">
             <img
               class="icon-img"
-              src="/weather-icons/humidity.svg"
+              src={ICON_PATHS.WEATHER.HUMIDITY}
               alt="humidity"
-              width="18"
-              height="18"
+              width={UI_CONFIG.ICON_SIZE_SMALL}
+              height={UI_CONFIG.ICON_SIZE_SMALL}
             />
             <span
               style="color: {getComfortLevelColor(humidity)}; font-weight: bold; font-size: 14px;"
@@ -186,14 +200,16 @@
           <span class="detail-item">
             <img
               class="icon-img"
-              src="/weather-icons/uv.svg"
+              src={ICON_PATHS.WEATHER.UV}
               alt="uv index"
-              width="18"
-              height="18"
+              width={UI_CONFIG.ICON_SIZE_SMALL}
+              height={UI_CONFIG.ICON_SIZE_SMALL}
             />
             <span
               style="color: {getComfortLevelColor(uvIndex)}; font-weight: bold; font-size: 14px;"
-              title={uvIndex >= 6 ? 'Wear sunscreen and limit sun exposure!' : ''}
+              title={uvIndex >= WEATHER_THRESHOLDS.UV.HIGH
+                ? 'Wear sunscreen and limit sun exposure!'
+                : ''}
             >
               UV: {uvIndex} ({getUvLabel(uvIndex)})
             </span>

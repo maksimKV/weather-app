@@ -7,7 +7,12 @@
   export let selected: Country | null = null;
 
   // Runtime validation
-  if (selected !== null && (typeof selected !== 'object' || typeof selected.countryCode !== 'string' || typeof selected.countryName !== 'string')) {
+  if (
+    selected !== null &&
+    (typeof selected !== 'object' ||
+      typeof selected.countryCode !== 'string' ||
+      typeof selected.countryName !== 'string')
+  ) {
     logDevError('Invalid selected prop passed to CountrySelector:', selected);
   }
 
