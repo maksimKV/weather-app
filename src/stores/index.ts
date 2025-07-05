@@ -4,7 +4,7 @@
 
 import { writable, derived, get } from 'svelte/store';
 import type { ForecastWithIcons } from '../lib/services/weatherService';
-import type { WeatherData } from '$lib/types';
+import type { WeatherData, City } from '$lib/types';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -16,16 +16,6 @@ export interface Country {
   population?: string;
   areaInSqKm?: number;
   code?: string; // Alternative field name from API
-}
-
-export interface City {
-  name: string;
-  lat: number;
-  lon: number;
-  country: string;
-  countryCode?: string;
-  geonameId?: number;
-  population?: number;
 }
 
 export interface WeatherCacheEntry {

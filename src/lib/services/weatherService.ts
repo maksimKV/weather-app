@@ -1,5 +1,5 @@
 import { actions, selectors } from '../../stores';
-import type { City } from '../../stores';
+import type { City } from '../types';
 import { normalizeCity as normalizeCityUtil } from '../utils';
 
 // ============================================================================

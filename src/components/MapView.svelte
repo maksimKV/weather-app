@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import maplibregl from 'maplibre-gl';
-  import type { City } from '../lib/cities';
+  import type { City } from '../lib/types';
   import { safeCall, validateCityData } from '../lib/errorBoundary';
   import 'maplibre-gl/dist/maplibre-gl.css';
 

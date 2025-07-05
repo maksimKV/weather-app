@@ -1,5 +1,6 @@
 import { writable } from 'svelte/store';
-import { cities, type City } from './index';
+import { cities } from './index';
+import type { City } from '../lib/types';
 
 interface Country {
   countryCode: string;

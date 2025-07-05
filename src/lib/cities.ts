@@ -1,9 +1,4 @@
-export interface City {
-  name: string;
-  lat: number;
-  lon: number;
-  country: string;
-}
+import type { City } from './types';
 
 export const cities: City[] = [
   // United States
