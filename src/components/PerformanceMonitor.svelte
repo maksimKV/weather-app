@@ -120,8 +120,6 @@
     margin-bottom: 10px;
   }
 
-
-
   .stats-container {
     display: flex;
     flex-direction: column;
@@ -154,5 +152,11 @@
   .stat-row span:last-child {
     font-weight: 600;
     color: var(--primary);
+  }
+
+  @media (max-width: 767px) {
+    .performance-monitor {
+      display: none !important;
+    }
   }
 </style>
