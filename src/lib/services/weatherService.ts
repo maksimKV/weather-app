@@ -429,9 +429,9 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
     });
 
     return weatherWithIcons;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_error) {
-    // console.error('Error fetching current weather for city:', city?.name, _error);
+    // eslint-disable-next-line no-console
+    console.error('Error fetching weather data:', _error);
     return null;
   }
 }
@@ -513,9 +513,11 @@ export async function getLocationForecast(): Promise<{
       country: locationData.country_name || '',
       latitude: locationData.latitude,
       longitude: locationData.longitude,
-      country_code: locationData.country_code
+      country_code: locationData.country_code,
     };
   } catch (_error) {
+    // eslint-disable-next-line no-console
+    console.error('Error fetching forecast:', _error);
     return null;
   }
 }

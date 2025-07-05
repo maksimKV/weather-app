@@ -263,7 +263,7 @@
           error: null,
           latitude: locationData.latitude,
           longitude: locationData.longitude,
-          country_code: locationData.country_code
+          country_code: locationData.country_code,
         });
         // Store the original geolocated city
         geolocatedCity.set({
@@ -271,12 +271,13 @@
           lon: locationData.longitude,
           name: locationData.location,
           country: locationData.country,
-          countryCode: locationData.country_code
+          countryCode: locationData.country_code,
         });
       } else {
         throw new Error('Failed to fetch location forecast');
       }
     } catch (error) {
+      console.error('Error detecting user location for forecast:', error);
       actions.setLocationData({
         forecast: null,
         name: 'Location unavailable',
@@ -284,7 +285,7 @@
         error: 'Unable to determine your location. Please select a city manually.',
         latitude: null,
         longitude: null,
-        country_code: ''
+        country_code: '',
       });
     }
 
@@ -330,19 +331,13 @@
       prefetchWeatherForCities(nearbyCities);
     }
   }
-
-  function isSelectedCitySameAsGeolocated() {
-    if (!$selectedCity || !$geolocatedCity) {
-      return false;
-    }
-    const latEqual = Math.abs(Number($selectedCity.lat) - Number($geolocatedCity.lat)) < 0.0001;
-    const lonEqual = Math.abs(Number($selectedCity.lon) - Number($geolocatedCity.lon)) < 0.0001;
-    return latEqual && lonEqual;
-  }
 </script>
 
 <svelte:head>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;400&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;400&display=swap"
+    rel="stylesheet"
+  />
 </svelte:head>
 
 <main>
@@ -499,8 +494,12 @@
     animation: spin 4s linear infinite;
   }
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
   h1 {
     font-family: 'Montserrat', system-ui, sans-serif;
@@ -512,7 +511,7 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
     color: transparent;
-    text-shadow: 2px 2px 8px rgba(42,125,225,0.15);
+    text-shadow: 2px 2px 8px rgba(42, 125, 225, 0.15);
     margin-bottom: 0.1em;
     margin-top: 0;
     letter-spacing: 1px;

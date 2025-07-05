@@ -35,7 +35,7 @@
       country: country || 'Unknown',
       countryCode: countryCode || '',
       geonameId: undefined,
-      population: undefined
+      population: undefined,
     };
     dispatch('select', cityObj);
   }
@@ -45,18 +45,26 @@
   <div class="location-forecast">
     <div class="location-heading">
       <span class="location-label">Your Current Location:</span>
-      <span
+      <button
+        type="button"
         class="location-city clickable"
-        role="button"
-        tabindex="0"
-        title="Show on map"
         on:click={handleLocationClick}
+        aria-label="Show on map"
       >
-        <svg class="pin-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle; margin-right: 0.3em;">
-          <path d="M8 15s6-5.686 6-9.5A6 6 0 1 0 2 5.5C2 9.314 8 15 8 15zm0-7a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/>
+        <svg
+          class="pin-icon"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          style="vertical-align: middle; margin-right: 0.3em;"
+        >
+          <path
+            d="M8 15s6-5.686 6-9.5A6 6 0 1 0 2 5.5C2 9.314 8 15 8 15zm0-7a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"
+          />
         </svg>
         {location}{country ? `, ${country}` : ''}
-      </span>
+      </button>
     </div>
     <div class="forecast-panel">
       {#each forecast.daily.time.slice(0, daysToShow) as date, i}
@@ -108,12 +116,17 @@
     align-items: center;
   }
   .location-city.clickable {
+    background: none;
+    border: none;
+    padding: 0.1em 0.3em;
+    font: inherit;
     cursor: pointer;
     color: var(--accent, #007bff);
     text-decoration: underline;
     border-radius: 4px;
-    padding: 0.1em 0.3em;
-    transition: background 0.2s, color 0.2s;
+    transition:
+      background 0.2s,
+      color 0.2s;
     outline: none;
     display: inline-flex;
     align-items: center;

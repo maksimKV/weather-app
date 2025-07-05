@@ -79,7 +79,7 @@ export const locationData = writable<LocationData>({
   error: null,
   latitude: null,
   longitude: null,
-  country_code: ''
+  country_code: '',
 });
 
 // Loading States
@@ -405,7 +405,7 @@ export const actions = {
       error: null,
       latitude: null,
       longitude: null,
-      country_code: ''
+      country_code: '',
     });
     actions.clearErrors();
   },
