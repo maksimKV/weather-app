@@ -55,6 +55,24 @@
     if (val < 8) return 'High';
     return 'Very High';
   }
+
+  // Helper for humidity color
+  function humidityColor(val: number | undefined): string {
+    if (val === undefined) return '#bbb';
+    if (val < 31) return '#2196f3'; // blue (dry)
+    if (val < 61) return '#4caf50'; // green (comfortable)
+    if (val < 81) return '#ff9800'; // orange (humid)
+    return '#f44336'; // red (very humid)
+  }
+
+  // Helper for humidity label
+  function humidityLabel(val: number | undefined): string {
+    if (val === undefined) return '';
+    if (val < 31) return 'Low';
+    if (val < 61) return 'Moderate';
+    if (val < 81) return 'High';
+    return 'Very High';
+  }
 </script>
 
 <div
@@ -154,16 +172,21 @@
     <div class="extra-weather-details">
       <div class="detail-row">
         {#if humidity !== undefined}
-          <span class="detail-item"
-            ><img
+          <span class="detail-item">
+            <img
               class="icon-img"
               src="/weather-icons/humidity.svg"
               alt="humidity"
               width="18"
               height="18"
             />
-            {humidity}%</span
-          >
+            <span style="color: {humidityColor(humidity)}; font-weight: bold; font-size: 14px;">
+              RH:
+            </span>
+            <span style="color: {humidityColor(humidity)}; font-size: 14px;">
+              {humidity}% ({humidityLabel(humidity)})
+            </span>
+          </span>
         {/if}
       </div>
       <div class="detail-row">
@@ -171,16 +194,18 @@
       </div>
       <div class="detail-row">
         {#if uvIndex !== undefined}
-          <span class="detail-item"
-            ><img
+          <span class="detail-item">
+            <img
               class="icon-img"
               src="/weather-icons/uv.svg"
               alt="uv index"
               width="18"
               height="18"
             />
-            <span style="color: {uvColor(uvIndex)};">UV: {uvIndex} ({uvLabel(uvIndex)})</span></span
-          >
+            <span style="color: {humidityColor(uvIndex)}; font-weight: bold; font-size: 14px;" title={uvIndex >= 6 ? 'Wear sunscreen and limit sun exposure!' : ''}>
+              UV: {uvIndex} ({uvLabel(uvIndex)})
+            </span>
+          </span>
         {/if}
       </div>
     </div>
@@ -242,6 +267,7 @@
     gap: 0.2em;
     align-items: flex-start;
     font-size: 0.98em;
+    padding-bottom: 0.5em;
   }
   .detail-row {
     display: flex;
