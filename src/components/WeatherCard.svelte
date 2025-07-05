@@ -132,7 +132,19 @@
       >
     </span>
   </div>
-  {#if humidity !== undefined || windspeed !== undefined || precipitation !== undefined || sunrise || sunset || uvIndex !== undefined}
+  {#if sunrise && sunset}
+    <div class="sunrise-sunset-panel">
+      <span class="sunrise-block">
+        <img class="icon-img" src="/weather-icons/sunrise.svg" alt="sunrise" width="18" height="18" style="filter: drop-shadow(0 0 2px #FFD600);" />
+        <span class="sunrise-time">{sunrise.slice(11, 16)}</span>
+      </span>
+      <span class="sunset-block">
+        <img class="icon-img" src="/weather-icons/sunset.svg" alt="sunset" width="18" height="18" style="filter: drop-shadow(0 0 2px #FF9800);" />
+        <span class="sunset-time">{sunset.slice(11, 16)}</span>
+      </span>
+    </div>
+  {/if}
+  {#if humidity !== undefined || windspeed !== undefined || precipitation !== undefined || uvIndex !== undefined}
     <div class="extra-weather-details">
       <div class="detail-row">
         {#if humidity !== undefined}
@@ -145,9 +157,6 @@
       <div class="detail-row">
         {#if precipitation !== undefined}
           <span class="detail-item"><span class="icon">☔</span> {precipitation} mm</span>
-        {/if}
-        {#if sunrise && sunset}
-          <span class="detail-item"><span class="icon">☀️</span> {sunrise.slice(11, 16)} / {sunset.slice(11, 16)}</span>
         {/if}
       </div>
       <div class="detail-row">
@@ -229,5 +238,39 @@
   .icon {
     font-size: 1.1em;
     vertical-align: middle;
+  }
+  .icon-img {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 0.1em;
+  }
+  .sunrise-sunset-panel {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5em;
+    font-size: 1em;
+    font-weight: 500;
+    margin: 0.5em 0 0.1em 0;
+    letter-spacing: 0.5px;
+  }
+  .sunrise-block, .sunset-block {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 70px;
+    margin: 0.1em 0;
+  }
+  .sunrise-time {
+    color: #FFD600;
+    font-weight: 600;
+    font-size: 1em;
+    margin-left: 0.1em;
+  }
+  .sunset-time {
+    color: #FF9800;
+    font-weight: 600;
+    font-size: 1em;
+    margin-left: 0.1em;
   }
 </style>
