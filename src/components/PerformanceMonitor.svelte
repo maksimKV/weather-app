@@ -120,9 +120,7 @@
     margin-bottom: 10px;
   }
 
-  .toggle-btn:hover {
-    background: var(--primary-dark);
-  }
+
 
   .stats-container {
     display: flex;
