@@ -96,7 +96,7 @@
 <style>
   .forecast-panel {
     display: flex;
-    gap: 1em;
+    gap: 0.5em;
     justify-content: center;
     margin-bottom: 1em;
     flex-wrap: wrap;
