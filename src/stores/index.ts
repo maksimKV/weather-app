@@ -9,20 +9,12 @@
  */
 import { writable, derived, get } from 'svelte/store';
 import type { ForecastWithIcons } from '../lib/services/weatherService';
-import type { WeatherData, City } from '$lib/types';
 import { logDevError } from '../lib/utils';
+import type { City, Country, WeatherData } from '../lib/types';
 
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
-
-export interface Country {
-  countryCode: string;
-  countryName: string;
-  population?: string;
-  areaInSqKm?: number;
-  code?: string; // Alternative field name from API
-}
 
 export interface WeatherCacheEntry {
   weatherData: WeatherData;
@@ -102,22 +94,21 @@ export const geolocatedCity = writable<City | null>(null);
 // UTILITY FUNCTIONS
 // ============================================================================
 
-// Determine country size based on area and population
+// Determine country size based on population only (area not available in Country interface)
 function getCountrySize(country: Country): 'Large' | 'Medium' | 'Small' {
-  const area = country.areaInSqKm || 0;
   const population = parseInt(country.population || '0') || 0;
 
-  // Large countries: either very large area or very large population
-  if (area > 1000000 || population > 100000000) {
+  // Large countries: very large population
+  if (population > 100000000) {
     return 'Large';
   }
 
-  // Medium countries: moderate area or moderate population
-  if (area > 100000 || population > 10000000) {
+  // Medium countries: moderate population
+  if (population > 10000000) {
     return 'Medium';
   }
 
-  // Small countries: small area and small population
+  // Small countries: small population
   return 'Small';
 }
 
@@ -148,7 +139,7 @@ export const citiesOfSelectedCountry = derived(
     // Filter cities by country code - handle both possible field structures
     const filteredCities = $cities.filter(city => {
       const cityCountryCode = city.countryCode || city.country;
-      const selectedCountryCode = $selectedCountry.countryCode || $selectedCountry.code;
+      const selectedCountryCode = $selectedCountry.countryCode;
       return cityCountryCode === selectedCountryCode;
     });
 

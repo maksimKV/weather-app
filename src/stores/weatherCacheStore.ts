@@ -1,15 +1,9 @@
 import { writable } from 'svelte/store';
-import type { WeatherData } from '$lib/types';
+import type { WeatherData, City } from '$lib/types';
 
 export interface WeatherCacheEntry {
   weatherData: WeatherData;
   timestamp: number; // ms since epoch
-}
-
-interface City {
-  name: string;
-  lat: number;
-  lon: number;
 }
 
 // Helper to create a unique key for each city (by name, lat, lon)

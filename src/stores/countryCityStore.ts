@@ -1,13 +1,7 @@
 import { writable } from 'svelte/store';
 import { cities } from './index';
-import type { City } from '../lib/types';
+import type { City, Country } from '../lib/types';
 import { logDevError } from '../lib/utils';
-
-interface Country {
-  countryCode: string;
-  countryName: string;
-  population?: string;
-}
 
 interface RawCity {
   geonameId: number;

@@ -9,25 +9,11 @@
  */
 import { actions } from '../../stores';
 import { logDevError } from '../utils';
+import type { City, Country } from '../types';
 
 // ============================================================================
 // TYPES & INTERFACES
 // ============================================================================
-
-export interface Country {
-  countryCode: string;
-  countryName: string;
-  population?: string;
-}
-
-export interface City {
-  name: string;
-  lat: number;
-  lon: number;
-  country: string;
-  countryCode?: string;
-  geonameId?: number;
-}
 
 // ============================================================================
 // API CONFIGURATION

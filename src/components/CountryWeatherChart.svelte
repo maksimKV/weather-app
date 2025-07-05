@@ -243,7 +243,7 @@
   // Debounced chart creation to handle rapid changes
   function scheduleChartCreation(): void {
     cancelPendingChartCreation();
-    
+
     if (isDestroyed) return;
 
     pendingChartCreation = setTimeout(() => {
@@ -285,11 +285,11 @@
   // Reactive cleanup and chart management
   $: if (!isDestroyed && cities.length > 0 && Object.keys(weatherData).length > 0) {
     const currentDataHash = createDataHash();
-    
+
     // Only update if data has actually changed significantly
     if (currentDataHash !== lastDataHash) {
       lastDataHash = currentDataHash;
-      
+
       if (chart) {
         // Update existing chart
         updateChart();

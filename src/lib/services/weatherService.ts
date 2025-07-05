@@ -1,6 +1,7 @@
 import { actions, selectors } from '../../stores';
+import { logDevError } from '../utils';
 import type { City } from '../types';
-import { normalizeCity as normalizeCityUtil, logDevError } from '../utils';
+import { normalizeCity as normalizeCityUtil } from '../utils';
 
 // ============================================================================
 // TYPES & INTERFACES
