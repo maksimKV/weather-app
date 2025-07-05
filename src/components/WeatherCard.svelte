@@ -85,7 +85,7 @@
       </span>
       {#if sunrise}
         <span class="temp-row">
-          <img class="temp-icon" src="/weather-icons/sunrise.svg" alt="sunrise" width="18" height="18" style="filter: drop-shadow(0 0 2px #FFD600);" />
+          <img class="temp-icon" src="/weather-icons/sunrise.svg" alt="sunrise" width="18" height="18" />
           <span class="sunrise-time">{sunrise.slice(11, 16)}</span>
         </span>
       {/if}
@@ -104,7 +104,7 @@
       </span>
       {#if sunset}
         <span class="temp-row">
-          <img class="temp-icon" src="/weather-icons/sunset.svg" alt="sunset" width="18" height="18" style="filter: drop-shadow(0 0 2px #FF9800);" />
+          <img class="temp-icon" src="/weather-icons/sunset.svg" alt="sunset" width="18" height="18" />
           <span class="sunset-time">{sunset.slice(11, 16)}</span>
         </span>
       {/if}
@@ -208,7 +208,7 @@
   .weather-columns {
     display: flex;
     flex-direction: row;
-    gap: 1.2em;
+    gap: 0.5em;
     width: 100%;
     justify-content: center;
     margin-bottom: 0.2em;
