@@ -11,14 +11,14 @@ import { writable, type Writable } from 'svelte/store';
 export interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
-  errorInfo: any;
+  errorInfo: unknown;
   componentStack?: string;
   timestamp: number;
 }
 
 export interface ErrorBoundaryOptions {
-  fallback?: (error: Error, errorInfo: any) => any;
-  onError?: (error: Error, errorInfo: any) => void;
+  fallback?: (error: Error, errorInfo: unknown) => unknown;
+  onError?: (error: Error, errorInfo: unknown) => void;
   resetOnPropsChange?: boolean;
 }
 
@@ -84,15 +84,15 @@ export function getErrorCategory(error: Error): string {
 // Note: This function is kept for compatibility but the Svelte ErrorBoundary component
 // is the preferred way to handle errors in this application
 export function createErrorBoundary(options: ErrorBoundaryOptions = {}) {
-  const { fallback, onError, resetOnPropsChange = true } = options;
+  const { onError } = options;
 
   return {
     // Error handler
-    handleError(error: Error, errorInfo: any = {}) {
+    handleError(error: Error, errorInfo: unknown = {}) {
       const errorState: ErrorBoundaryState = {
         hasError: true,
         error,
-        errorInfo,
+        errorInfo: errorInfo,
         timestamp: Date.now(),
       };
 
@@ -102,19 +102,20 @@ export function createErrorBoundary(options: ErrorBoundaryOptions = {}) {
       if (onError) {
         try {
           onError(error, errorInfo);
-        } catch (handlerError) {
-          console.error('Error in error handler:', handlerError);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_handlerError) {
+          // console.error('Error in error handler:', _handlerError);
         }
       }
 
       // Log error for debugging
-      console.error('Error Boundary caught error:', {
-        error: error.message,
-        stack: error.stack,
-        info: errorInfo,
-        category: getErrorCategory(error),
-        recoverable: isErrorRecoverable(error),
-      });
+      // console.error('Error Boundary caught error:', {
+      //   error: error.message,
+      //   stack: error.stack,
+      //   info: errorInfo,
+      //   category: getErrorCategory(error),
+      //   recoverable: isErrorRecoverable(error),
+      // });
     },
 
     // Reset error state
@@ -134,7 +135,7 @@ export function createErrorBoundary(options: ErrorBoundaryOptions = {}) {
 // DEFAULT FALLBACK COMPONENTS
 // ============================================================================
 
-export function createDefaultFallback(error: Error, errorInfo: any) {
+export function createDefaultFallback(error: Error, _errorInfo: unknown) {
   const category = getErrorCategory(error);
   const isRecoverable = isErrorRecoverable(error);
 
@@ -205,7 +206,7 @@ export function createDefaultFallback(error: Error, errorInfo: any) {
 export function setupGlobalErrorHandlers() {
   // Handle unhandled promise rejections
   window.addEventListener('unhandledrejection', event => {
-    console.error('Unhandled promise rejection:', event.reason);
+    // console.error('Unhandled promise rejection:', event.reason);
     errorStore.set({
       hasError: true,
       error: new Error(`Unhandled Promise Rejection: ${event.reason}`),
@@ -217,7 +218,7 @@ export function setupGlobalErrorHandlers() {
 
   // Handle global errors
   window.addEventListener('error', event => {
-    console.error('Global error:', event.error);
+    // console.error('Global error:', event.error);
     errorStore.set({
       hasError: true,
       error: event.error || new Error(event.message),
@@ -228,8 +229,10 @@ export function setupGlobalErrorHandlers() {
 
   // Handle Svelte component errors
   if (typeof window !== 'undefined') {
-    (window as any).__SVELTE_ERROR_HANDLER__ = (error: Error) => {
-      console.error('Svelte error:', error);
+    (
+      window as unknown as { __SVELTE_ERROR_HANDLER__?: (error: Error) => void }
+    ).__SVELTE_ERROR_HANDLER__ = (error: Error) => {
+      // console.error('Svelte error:', error);
       errorStore.set({
         hasError: true,
         error,
@@ -244,16 +247,16 @@ export function setupGlobalErrorHandlers() {
 // SAFE UTILITY FUNCTIONS
 // ============================================================================
 
-export function safeAccess<T>(obj: any, path: string[], defaultValue: T): T {
+export function safeAccess<T>(obj: unknown, path: string[], defaultValue: T): T {
   try {
-    let current = obj;
+    let current: unknown = obj;
     for (const key of path) {
-      if (current == null || typeof current !== 'object') {
+      if (typeof current !== 'object' || current === null) {
         return defaultValue;
       }
-      current = current[key];
+      current = (current as Record<string, unknown>)[key];
     }
-    return current !== undefined ? current : defaultValue;
+    return current !== undefined ? (current as T) : defaultValue;
   } catch {
     return defaultValue;
   }
@@ -275,24 +278,26 @@ export function safeAsyncCall<T>(fn: () => Promise<T>, defaultValue: T): Promise
 // DATA VALIDATION
 // ============================================================================
 
-export function validateWeatherData(data: any): boolean {
+export function validateWeatherData(data: unknown): boolean {
   if (!data || typeof data !== 'object') return false;
-
+  const d = data as Record<string, unknown>;
   // Check for required weather properties
-  if (data.daily && typeof data.daily === 'object') {
+  if (d.daily && typeof d.daily === 'object') {
+    const daily = d.daily as Record<string, unknown>;
     const required = ['time', 'temperature_2m_min', 'temperature_2m_max', 'weathercode'];
-    return required.every(prop => Array.isArray(data.daily[prop]));
+    return required.every(prop => Array.isArray(daily[prop]));
   }
-
   // Check for current weather properties
-  if (data.temperature !== undefined && data.weathercode !== undefined) {
+  if (
+    (d as Record<string, unknown>).temperature !== undefined &&
+    (d as Record<string, unknown>).weathercode !== undefined
+  ) {
     return true;
   }
-
   return false;
 }
 
-export function validateCityData(data: any): boolean {
+export function validateCityData(data: Record<string, unknown>): boolean {
   if (!data || typeof data !== 'object') return false;
 
   // Check for required properties
@@ -316,7 +321,7 @@ export function validateCityData(data: any): boolean {
   return true;
 }
 
-export function validateCountryData(data: any): boolean {
+export function validateCountryData(data: Record<string, unknown>): boolean {
   if (!data || typeof data !== 'object') return false;
 
   const required = ['countryCode', 'countryName'];

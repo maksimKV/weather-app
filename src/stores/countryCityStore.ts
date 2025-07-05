@@ -1,25 +1,51 @@
 import { writable } from 'svelte/store';
+import { cities, type City } from './index';
 
-export const countries = writable<
-  { countryCode: string; countryName: string; population?: string }[]
->([]);
-export const cities = writable<any[]>([]);
+interface Country {
+  countryCode: string;
+  countryName: string;
+  population?: string;
+}
+
+interface RawCity {
+  geonameId: number;
+  name: string;
+  lat: number;
+  lng?: number;
+  lon?: number;
+  countryCode?: string;
+  countryName?: string;
+  population?: number;
+}
+
+export const countries = writable<Country[]>([]);
 export const countriesLoaded = writable(false);
-export const citiesLoaded = writable(false);
 export const countryCityError = writable<string | null>(null);
 
 export async function fetchAndCacheCountriesCities() {
+  console.log('fetchAndCacheCountriesCities: Starting...');
+  
   // Try to load from sessionStorage first
-  const cachedCountries = sessionStorage.getItem('countries');
-  const cachedCities = sessionStorage.getItem('cities');
+  let cachedCountries: string | null = null;
+  let cachedCities: string | null = null;
+
+  if (typeof window !== 'undefined') {
+    cachedCountries = sessionStorage.getItem('countries');
+    cachedCities = sessionStorage.getItem('cities');
+  }
+
   if (cachedCountries && cachedCities) {
+    console.log('fetchAndCacheCountriesCities: Loading from cache...');
     countries.set(JSON.parse(cachedCountries));
     cities.set(JSON.parse(cachedCities));
     countriesLoaded.set(true);
-    citiesLoaded.set(true);
     countryCityError.set(null);
+    console.log('fetchAndCacheCountriesCities: Loaded from cache, cities count:', JSON.parse(cachedCities).length);
     return;
   }
+  
+  console.log('fetchAndCacheCountriesCities: No cache found, fetching from API...');
+  
   try {
     // Fetch countries as before
     const countriesRes = await fetch('/api/countries');
@@ -29,11 +55,14 @@ export async function fetchAndCacheCountriesCities() {
     }
     const countriesData = await countriesRes.json();
     countries.set(countriesData);
-    sessionStorage.setItem('countries', JSON.stringify(countriesData));
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('countries', JSON.stringify(countriesData));
+    }
     countriesLoaded.set(true);
+    console.log('fetchAndCacheCountriesCities: Countries loaded:', countriesData.length);
 
     // Batch fetch all cities
-    let allCities: any[] = [];
+    let allCities: RawCity[] = [];
     let startRow = 0;
     const batchSize = 1000;
     let keepFetching = true;
@@ -42,6 +71,7 @@ export async function fetchAndCacheCountriesCities() {
 
     while (keepFetching) {
       batchCount++;
+      console.log(`fetchAndCacheCountriesCities: Fetching batch ${batchCount}...`);
 
       try {
         const res = await fetch(`/api/cities?maxRows=${batchSize}&startRow=${startRow}`);
@@ -54,6 +84,7 @@ export async function fetchAndCacheCountriesCities() {
 
         const responseText = await res.text();
         if (!responseText || responseText.trim() === '') {
+          console.log(`fetchAndCacheCountriesCities: Empty response for batch ${batchCount}, stopping`);
           keepFetching = false;
           break;
         }
@@ -63,6 +94,7 @@ export async function fetchAndCacheCountriesCities() {
         if (Array.isArray(batch) && batch.length > 0) {
           allCities = allCities.concat(batch);
           startRow += batchSize;
+          console.log(`fetchAndCacheCountriesCities: Batch ${batchCount} loaded ${batch.length} cities, total: ${allCities.length}`);
 
           // If less than batchSize returned, we're done
           if (batch.length < batchSize) {
@@ -79,32 +111,46 @@ export async function fetchAndCacheCountriesCities() {
             await new Promise(resolve => setTimeout(resolve, 100));
           }
         } else {
+          console.log(`fetchAndCacheCountriesCities: Invalid batch ${batchCount}, stopping`);
           keepFetching = false;
         }
-      } catch (err: any) {
-        console.error(`Error in batch ${batchCount}:`, err);
+      } catch (error) {
+        console.error(`fetchAndCacheCountriesCities: Error in batch ${batchCount}:`, error);
         // Continue with the cities we've already fetched instead of failing completely
         keepFetching = false;
       }
     }
 
-    // Deduplicate by geonameId
-    const uniqueCities = Array.from(new Map(allCities.map(c => [c.geonameId, c])).values());
+    // Deduplicate by geonameId and normalize to the correct City interface
+    const uniqueCities = Array.from(new Map(allCities.map(c => [c.geonameId, c])).values())
+      .map((c: RawCity) => ({
+        name: c.name,
+        lat: c.lat,
+        lon: c.lng || c.lon || 0,
+        country: c.countryCode || c.countryName || 'Unknown',
+        countryCode: c.countryCode,
+        geonameId: c.geonameId,
+      }));
+
+    console.log('fetchAndCacheCountriesCities: Final unique cities count:', uniqueCities.length);
 
     if (uniqueCities.length > 0) {
       cities.set(uniqueCities);
-      sessionStorage.setItem('cities', JSON.stringify(uniqueCities));
-      citiesLoaded.set(true);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('cities', JSON.stringify(uniqueCities));
+      }
       countryCityError.set(null);
+      console.log('fetchAndCacheCountriesCities: Cities successfully loaded into store');
     } else {
       countryCityError.set('No cities could be fetched from the API');
-      citiesLoaded.set(false);
+      console.error('fetchAndCacheCountriesCities: No cities could be fetched');
     }
-  } catch (err: any) {
-    console.error('Error fetching countries/cities:', err);
-    countryCityError.set(err.message || 'Unknown error fetching countries/cities');
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : 'Unknown error fetching countries/cities';
+    countryCityError.set(errorMessage);
     countriesLoaded.set(false);
-    citiesLoaded.set(false);
+    console.error('fetchAndCacheCountriesCities: Error:', errorMessage);
   }
 }
 
@@ -117,16 +163,22 @@ export async function fetchCitiesForCountry(countryCode: string) {
     }
     const citiesData = await res.json();
     if (Array.isArray(citiesData)) {
-      const newCities = citiesData.map((city: any) => ({ ...city, lon: city.lng }));
-      let uniqueNewCities: any[] = [];
-      cities.update(currentCities => {
+      const newCities = citiesData.map((city: RawCity) => ({
+        name: city.name,
+        lat: city.lat,
+        lon: city.lng || city.lon || 0,
+        country: city.countryCode || city.countryName || 'Unknown',
+        countryCode: city.countryCode,
+        geonameId: city.geonameId,
+      }));
+      cities.update((currentCities: City[]) => {
         // Add new cities, avoiding duplicates
-        const existingIds = new Set(currentCities.map(c => c.geonameId));
-        uniqueNewCities = newCities.filter(city => !existingIds.has(city.geonameId));
+        const existingIds = new Set(currentCities.map((c: City) => c.geonameId));
+        const uniqueNewCities = newCities.filter(city => !existingIds.has(city.geonameId));
         return [...currentCities, ...uniqueNewCities];
       });
     }
-  } catch (err) {
-    console.error(`Error fetching cities for ${countryCode}:`, err);
+  } catch {
+    // Silently handle errors for additional city fetching
   }
 }

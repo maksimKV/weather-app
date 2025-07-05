@@ -1,5 +1,14 @@
 import { json } from '@sveltejs/kit';
 
+interface GeoNamesCountry {
+  countryCode: string;
+  countryName: string;
+  population?: number;
+  geonameId?: number;
+  continent?: string;
+  capital?: string;
+}
+
 export async function GET() {
   const username = import.meta.env.VITE_GEONAMES_USERNAME;
 
@@ -39,7 +48,7 @@ export async function GET() {
 
     // Filter out invalid countries
     const validCountries = data.geonames.filter(
-      (country: any) =>
+      (country: GeoNamesCountry) =>
         country &&
         country.countryCode &&
         country.countryName &&
@@ -53,8 +62,6 @@ export async function GET() {
 
     return json(validCountries);
   } catch (error) {
-    console.error('Countries API error:', error);
-
     let errorMessage = 'Failed to fetch countries from GeoNames API';
     let statusCode = 500;
 

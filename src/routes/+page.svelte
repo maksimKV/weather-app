@@ -8,7 +8,6 @@
   import PerformanceMonitor from '../components/PerformanceMonitor.svelte';
   import {
     setupGlobalErrorHandlers,
-    safeAccess,
     validateWeatherData,
     validateCityData,
     validateCountryData,
@@ -32,7 +31,6 @@
     clearWeatherCache,
     prefetchWeatherForCities,
     getCacheStats,
-    WEATHER_ICONS,
   } from '../lib/services/weatherService';
   import {
     initializeData,
@@ -42,10 +40,9 @@
   } from '../lib/services/dataService';
   import { fly, fade } from 'svelte/transition';
   import { onMount, tick } from 'svelte';
-  import type { City, Country, CountrySelectEvent, CitySelectEvent } from '../lib/types';
+  import type { City, Country } from '../lib/types';
 
-  // Use weather icons from service
-  const iconMap = WEATHER_ICONS;
+  // Weather icons are available via WEATHER_ICONS import
 
   let cityManuallySelected = false;
   let mapCenter: [number, number] = [20, 0];
@@ -88,6 +85,7 @@
 
       // Validate cities before fetching weather
       const validCities = countryCities.filter(city => validateCityData(city));
+      console.log('DEBUG: validCities for weather fetch:', JSON.stringify(validCities, null, 2));
       if (validCities.length === 0) {
         console.warn('No valid cities found for weather fetch');
         return;
@@ -99,7 +97,18 @@
       const validWeatherResults: Record<string, any> = {};
       for (const [cityName, weather] of Object.entries(weatherResults)) {
         if (weather && typeof weather === 'object') {
-          validWeatherResults[cityName] = weather;
+          // Transform WeatherWithIcon to WeatherData structure
+          const weatherData = {
+            current: {
+              temperature_2m: weather.temperature,
+              weathercode: weather.weathercode,
+              time: weather.time,
+            },
+            icons: {
+              [weather.weathercode]: weather.icon,
+            },
+          };
+          validWeatherResults[cityName] = weatherData;
         }
       }
 
@@ -127,8 +136,20 @@
       }
 
       const weather = await getCurrentWeather(normalizeCity($selectedCity));
+      console.log('DEBUG: getCurrentWeather result:', JSON.stringify(weather, null, 2));
       if (weather && validateWeatherData(weather)) {
-        actions.setCityWeather($selectedCity.name, weather);
+        // Transform WeatherWithIcon to WeatherData structure
+        const weatherData = {
+          current: {
+            temperature_2m: weather.temperature,
+            weathercode: weather.weathercode,
+            time: weather.time,
+          },
+          icons: {
+            [weather.weathercode]: weather.icon,
+          },
+        };
+        actions.setCityWeather($selectedCity.name, weatherData);
       } else {
         console.warn('Invalid weather data received for city:', $selectedCity.name);
       }
@@ -284,6 +305,7 @@
 
   // Reactively load forecast when selectedCity changes
   $: if ($selectedCity) {
+    console.log('DEBUG: $selectedCity before weather fetch:', JSON.stringify($selectedCity, null, 2));
     loadSelectedCityWeather();
     loadForecast();
   }

@@ -2,13 +2,14 @@ import js from '@eslint/js';
 import typescript from '@typescript-eslint/eslint-plugin';
 import typescriptParser from '@typescript-eslint/parser';
 import svelte from 'eslint-plugin-svelte';
+import svelteParser from 'svelte-eslint-parser';
 import prettier from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
 
 export default [
   js.configs.recommended,
   {
-    files: ['**/*.{js,ts,svelte}'],
+    files: ['**/*.{js,ts}'],
     ignores: [
       'node_modules/',
       'build/',
@@ -17,6 +18,17 @@ export default [
       'dist/',
       'coverage/',
       '*.min.js',
+      'package-lock.json',
+      'package.json',
+      '*.config.js',
+      '*.config.ts',
+      'vite.config.ts',
+      'svelte.config.js',
+      'tsconfig.json',
+      '.prettierrc',
+      '.gitignore',
+      '.npmrc',
+      'README.md',
     ],
     languageOptions: {
       parser: typescriptParser,
@@ -29,6 +41,22 @@ export default [
         browser: true,
         es2017: true,
         node: true,
+        window: 'readonly',
+        document: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        AbortController: 'readonly',
+        AbortSignal: 'readonly',
+        Response: 'readonly',
+        Blob: 'readonly',
+        CustomEvent: 'readonly',
+        HTMLDivElement: 'readonly',
       },
     },
     plugins: {
@@ -54,11 +82,56 @@ export default [
   },
   {
     files: ['**/*.svelte'],
+    ignores: [
+      'node_modules/',
+      'build/',
+      '.svelte-kit/',
+      'static/',
+      'dist/',
+      'coverage/',
+      '*.min.js',
+      'package-lock.json',
+      'package.json',
+      '*.config.js',
+      '*.config.ts',
+      'vite.config.ts',
+      'svelte.config.js',
+      'tsconfig.json',
+      '.prettierrc',
+      '.gitignore',
+      '.npmrc',
+      'README.md',
+    ],
     languageOptions: {
-      parser: svelte.parser,
+      parser: svelteParser,
       parserOptions: {
         parser: typescriptParser,
       },
+      globals: {
+        window: 'readonly',
+        document: 'readonly',
+        console: 'readonly',
+        fetch: 'readonly',
+        localStorage: 'readonly',
+        sessionStorage: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        AbortController: 'readonly',
+        AbortSignal: 'readonly',
+        Response: 'readonly',
+        Blob: 'readonly',
+        CustomEvent: 'readonly',
+        HTMLDivElement: 'readonly',
+      },
+    },
+    plugins: {
+      svelte: svelte,
+    },
+    rules: {
+      ...svelte.configs.recommended.rules,
+      'svelte/valid-compile': 'error',
     },
   },
 ];

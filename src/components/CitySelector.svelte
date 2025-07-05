@@ -1,11 +1,11 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
   import { cities, citiesLoaded } from '../stores';
-  import type { City, CitySelectEvent } from '../lib/types';
+  import type { City } from '../lib/types';
 
   export let selected: City | null = null;
-  export let country: string | null = null;
   export let clearTrigger: number = 0;
+  export let country: string | null = null;
 
   let search = '';
   let filtered: City[] = [];
@@ -18,6 +18,15 @@
   let lastSearch = '';
 
   $: useCache = $citiesLoaded && $cities.length > 1000;
+
+  $: {
+    // Debug log for troubleshooting
+    console.log('CitySelector debug:', {
+      $citiesLoaded,
+      citiesLength: $cities.length,
+      useCache
+    });
+  }
 
   async function searchCities(query: string): Promise<void> {
     if (!query || query.length < 2) {
@@ -42,7 +51,12 @@
     if (useCache) {
       const searchLower = search.toLowerCase();
       filtered = $cities
-        .filter(c => c.name && c.name.toLowerCase().startsWith(searchLower))
+        .filter(
+          c =>
+            c.name &&
+            c.name.toLowerCase().startsWith(searchLower) &&
+            (!country || c.countryCode === country)
+        )
         .slice(0, 20);
     } else {
       searchCities(search);

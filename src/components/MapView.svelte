@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import maplibregl from 'maplibre-gl';
   import type { City } from '../lib/cities';
   import { safeCall, validateCityData } from '../lib/errorBoundary';
@@ -10,7 +10,8 @@
   export let zoom: number = 5;
   export let selectedCity: City | null = null;
   export let weatherByCity: Record<string, { temperature: number; icon: string }> = {};
-  export let onMarkerClick: (city: City) => void = () => {};
+  // eslint-disable-next-line no-unused-vars
+  export let onMarkerClick: (city: City) => void;
 
   let mapContainer: HTMLDivElement;
   let map: maplibregl.Map | null = null;
@@ -34,7 +35,7 @@
 
       // Validate cities before adding markers
       const validCities = (selectedCity ? [selectedCity] : cities).filter(city =>
-        validateCityData(city)
+        validateCityData(city as unknown as Record<string, unknown>)
       );
 
       for (const city of validCities) {
@@ -126,7 +127,12 @@
   $: if (map && !mapError && (cities || weatherByCity || selectedCity)) {
     addMarkers();
   }
-  $: if (map && !mapError && selectedCity && validateCityData(selectedCity)) {
+  $: if (
+    map &&
+    !mapError &&
+    selectedCity &&
+    validateCityData(selectedCity as unknown as Record<string, unknown>)
+  ) {
     try {
       map.flyTo({
         center: [
@@ -142,7 +148,9 @@
     try {
       // Fit map to all city markers (country)
       const bounds = new maplibregl.LngLatBounds();
-      const validCities = cities.filter(city => validateCityData(city));
+      const validCities = cities.filter(city =>
+        validateCityData(city as unknown as Record<string, unknown>)
+      );
 
       for (const city of validCities) {
         bounds.extend([

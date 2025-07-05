@@ -9,7 +9,6 @@
   export let maxIcon: string;
   export let mainIconSize: number = 56;
   export let textSize: string = '1em';
-  export let margin: string = '0';
   export let minWidth: string = '80px';
   export let cardBg: string = 'var(--secondary)';
   export let cardMargin: string = '0 0.3em';

@@ -7,7 +7,6 @@ export {
 
 // Legacy functions for backward compatibility
 import { getCurrentWeather, getForecast } from './services/weatherService';
-import type { City } from '../stores/appStore';
 
 export interface Weather {
   temperature: number;

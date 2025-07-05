@@ -117,9 +117,9 @@ export interface AppState {
 // API RESPONSE TYPES
 // ============================================================================
 
-export interface CitiesApiResponse extends Array<City> {}
+export type CitiesApiResponse = City[];
 
-export interface CountriesApiResponse extends Array<Country> {}
+export type CountriesApiResponse = Country[];
 
 export interface WeatherApiResponse {
   current: {
@@ -139,9 +139,9 @@ export interface WeatherApiResponse {
 // EVENT TYPES
 // ============================================================================
 
-export interface CitySelectEvent extends CustomEvent<City> {}
-
-export interface CountrySelectEvent extends CustomEvent<Country> {}
+// Event types are now direct type aliases
+export type CitySelectEvent = CustomEvent<City>;
+export type CountrySelectEvent = CustomEvent<Country>;
 
 // ============================================================================
 // UTILITY TYPES

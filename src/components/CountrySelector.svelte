@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount } from 'svelte';
   import { countries, countriesLoaded } from '../stores';
-  import type { Country, CountrySelectEvent } from '../lib/types';
+  import type { Country } from '../lib/types';
 
   export let selected: Country | null = null;
 

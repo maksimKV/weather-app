@@ -72,10 +72,6 @@
     font-weight: 700;
     color: var(--primary);
   }
-  .location-country {
-    font-weight: 400;
-    color: #888;
-  }
   .forecast-panel {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -93,53 +89,5 @@
     .forecast-panel {
       grid-template-columns: repeat(2, 1fr);
     }
-  }
-  .day {
-    background: var(--secondary);
-    border-radius: var(--border-radius);
-    padding: 1em;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 80px;
-    box-sizing: border-box;
-  }
-  .big-weather-icon {
-    width: 56px;
-    height: 56px;
-    margin-bottom: 0.5em;
-  }
-  .temps {
-    display: flex;
-    gap: 0.5em;
-  }
-  .min-temp {
-    color: #2196f3;
-    font-weight: 500;
-  }
-  .max-temp {
-    color: #f44336;
-    font-weight: 500;
-  }
-  .temp-block {
-    display: inline-block;
-    margin: 0 0.3em;
-  }
-  .temp-row {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    min-width: 70px;
-    margin: 0.1em 0;
-  }
-  .temp-separator {
-    border-bottom: 2.5px solid #bdbdbd;
-    margin: 0.28em 0 0.28em 0;
-    width: 100%;
-  }
-  .temp-icon {
-    vertical-align: middle;
-    position: relative;
-    top: 2px;
   }
 </style>

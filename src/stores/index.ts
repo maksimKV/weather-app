@@ -3,7 +3,8 @@
 // ============================================================================
 
 import { writable, derived, get } from 'svelte/store';
-import type { WeatherWithIcon, ForecastWithIcons } from '../lib/services/weatherService';
+import type { ForecastWithIcons } from '../lib/services/weatherService';
+import type { WeatherData } from '$lib/types';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -25,15 +26,8 @@ export interface City {
   geonameId?: number;
 }
 
-export interface WeatherData {
-  temperature: number;
-  icon: string;
-  weathercode: number;
-  time: string;
-}
-
 export interface WeatherCacheEntry {
-  weatherData: any;
+  weatherData: WeatherData;
   timestamp: number;
 }
 
@@ -122,10 +116,10 @@ export const weatherWithIcons = derived(cityWeather, $cityWeather => {
     Object.entries($cityWeather).map(([cityName, weather]) => [
       cityName,
       {
-        temperature: Math.round(weather.temperature),
-        icon: weather.icon,
-        weathercode: weather.weathercode,
-        time: weather.time,
+        temperature: weather.current?.temperature_2m || 0,
+        icon: weather.icons?.[weather.current?.weathercode || 0] || '',
+        weathercode: weather.current?.weathercode || 0,
+        time: weather.current?.time || '',
       },
     ])
   );
@@ -159,6 +153,9 @@ const PERSISTENCE_KEYS = {
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
   try {
+    if (typeof window === 'undefined') {
+      return defaultValue;
+    }
     const stored = localStorage.getItem(key);
     return stored ? JSON.parse(stored) : defaultValue;
   } catch {
@@ -166,11 +163,13 @@ function loadFromStorage<T>(key: string, defaultValue: T): T {
   }
 }
 
-function saveToStorage(key: string, value: any): void {
+function saveToStorage(key: string, value: unknown): void {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.error(`Failed to save to storage: ${key}`, error);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+  } catch {
+    // Silently handle storage errors
   }
 }
 
@@ -231,9 +230,11 @@ export const actions = {
   },
 
   setCities: (citiesData: City[]) => {
+    console.log('actions.setCities: Setting cities in store, count:', citiesData.length);
     cities.set(citiesData);
     loading.update(state => ({ ...state, cities: false }));
     errors.update(state => ({ ...state, cities: null }));
+    console.log('actions.setCities: Cities store updated successfully');
   },
 
   addCities: (newCities: City[]) => {
@@ -269,7 +270,7 @@ export const actions = {
   },
 
   // Cache Actions
-  setWeatherCache: (cityKey: string, weatherData: any) => {
+  setWeatherCache: (cityKey: string, weatherData: WeatherData) => {
     weatherCache.update(cache => ({
       ...cache,
       [cityKey]: { weatherData, timestamp: Date.now() },
@@ -288,7 +289,9 @@ export const actions = {
 
   clearWeatherCache: () => {
     weatherCache.set({});
-    localStorage.removeItem(PERSISTENCE_KEYS.WEATHER_CACHE);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(PERSISTENCE_KEYS.WEATHER_CACHE);
+    }
   },
 
   // Loading Actions
@@ -380,5 +383,5 @@ export const appStore = {
   subscribe: selectedCountry.subscribe,
   setCountry: actions.setSelectedCountry,
   setCity: actions.setSelectedCity,
-  setWeather: (weather: any) => actions.setCurrentForecast(weather),
+  setWeather: (weather: ForecastWithIcons | null) => actions.setCurrentForecast(weather),
 };

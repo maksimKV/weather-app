@@ -2,10 +2,6 @@
   import { onMount, onDestroy } from 'svelte';
   import { errorStore, type ErrorBoundaryState } from '../lib/errorBoundary';
 
-  export let fallback: ((error: Error, errorInfo: any) => any) | null = null;
-  export let onError: (error: Error, errorInfo: any) => void = () => {};
-  export let resetOnPropsChange = true;
-
   let hasError = false;
   let error: Error | null = null;
   let errorInfo: any = null;
@@ -23,9 +19,6 @@
     hasError = true;
     error = err;
     errorInfo = info;
-
-    // Call custom error handler
-    onError(err, info);
 
     // Log error
     console.error('ErrorBoundary caught error:', {

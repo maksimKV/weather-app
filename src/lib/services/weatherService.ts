@@ -47,7 +47,7 @@ export interface LocationData {
 export interface WeatherServiceError {
   message: string;
   code: string;
-  details?: any;
+  details?: unknown;
 }
 
 // ============================================================================
@@ -59,7 +59,7 @@ const IP_API_URL = 'https://ipapi.co/json/';
 const REQUEST_DELAY_MS = 50; // Reduced delay for better performance
 const MAX_CONCURRENT_REQUESTS = 6; // Increased concurrency
 const CACHE_DURATION_MS = 10 * 60 * 1000; // 10 minutes
-const PREFETCH_THRESHOLD = 0.8; // Prefetch when cache is 80% full
+// const PREFETCH_THRESHOLD = 0.8; // Prefetch when cache is 80% full
 
 // Weather icon mapping
 export const WEATHER_ICONS: Record<number, string> = {
@@ -148,15 +148,16 @@ const locationMemoCache = new MemoizationCache<LocationData>();
 // ============================================================================
 
 class EnhancedRequestQueue {
-  private queue: Array<() => Promise<any>> = [];
+  private queue: Array<() => Promise<unknown>> = [];
   private running = 0;
-  private requestCache = new Map<string, Promise<any>>();
+  private requestCache = new Map<string, Promise<unknown>>();
   private abortControllers = new Map<string, AbortController>();
 
   async add<T>(key: string, requestFn: () => Promise<T>, timeoutMs: number = 30000): Promise<T> {
     // Check if request is already in progress
     if (this.requestCache.has(key)) {
-      return this.requestCache.get(key)!;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return this.requestCache.get(key)! as T;
     }
 
     // Create abort controller for this request
@@ -240,7 +241,7 @@ const requestQueue = new EnhancedRequestQueue();
 // UTILITY FUNCTIONS
 // ============================================================================
 
-function createRequestKey(endpoint: string, params: Record<string, any>): string {
+function createRequestKey(endpoint: string, params: Record<string, unknown>): string {
   const sortedParams = Object.keys(params)
     .sort()
     .map(key => `${key}=${params[key]}`)
@@ -251,7 +252,7 @@ function createRequestKey(endpoint: string, params: Record<string, any>): string
 function normalizeCity(city: City): City {
   return {
     ...city,
-    lon: city.lon || (city as any).lng,
+    lon: city.lon ?? (city as { lng?: number }).lng ?? 0,
   };
 }
 
@@ -295,14 +296,14 @@ async function makeRequest<T>(url: string, signal?: AbortSignal): Promise<T> {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data: unknown = await response.json();
 
     // Validate response data
     if (!data || typeof data !== 'object') {
       throw new Error('Invalid response format from API');
     }
 
-    return data;
+    return data as unknown as T;
   } catch (error) {
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
@@ -322,8 +323,8 @@ async function fetchCurrentWeatherRaw(lat: number, lon: number): Promise<Weather
 
   return requestQueue.add(key, async () => {
     const url = `${BASE_URL}?latitude=${lat}&longitude=${lon}&current_weather=true`;
-    const data = await makeRequest<any>(url);
-    return data.current_weather;
+    const data = await makeRequest<unknown>(url);
+    return (data as { current_weather: Weather }).current_weather;
   });
 }
 
@@ -359,21 +360,21 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
   try {
     // Validate city data
     if (!city) {
-      console.error('No city data provided for weather fetch');
+      // console.error('No city data provided for weather fetch');
       return null;
     }
 
     // Convert coordinates to numbers if they're strings
     const lat = Number(city.lat);
-    const lon = Number(city.lon || (city as any).lng);
+    const lon = Number(city.lon ?? (city as { lng?: number }).lng ?? 0);
 
     if (isNaN(lat) || isNaN(lon)) {
-      console.error('Invalid coordinates for weather fetch:', city);
+      // console.error('Invalid coordinates for weather fetch:', city);
       return null;
     }
 
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-      console.error('Coordinates out of valid range:', { lat, lon });
+      // console.error('Coordinates out of valid range:', { lat, lon });
       return null;
     }
 
@@ -389,8 +390,13 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
     // Check store cache
     const cacheStats = selectors.getCacheStats();
     const cached = cacheStats.size > 0 ? actions.getWeatherCache(cityKey) : null;
-    if (cached?.current_weather) {
-      const weatherWithIcons = addWeatherIcons(cached.current_weather);
+    if (cached?.current) {
+      const weather: Weather = {
+        temperature: cached.current.temperature_2m,
+        weathercode: cached.current.weathercode,
+        time: cached.current.time,
+      };
+      const weatherWithIcons = addWeatherIcons(weather);
       if (weatherWithIcons) {
         weatherMemoCache.set(cityKey, weatherWithIcons);
         return weatherWithIcons;
@@ -400,24 +406,31 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
     // Fetch from API
     const weather = await fetchCurrentWeatherRaw(normalizedCity.lat, normalizedCity.lon);
     if (!weather) {
-      console.warn('No weather data received for city:', city.name);
+      // console.warn('No weather data received for city:', city.name);
       return null;
     }
 
     // Validate weather data
     if (!weather.temperature || typeof weather.temperature !== 'number') {
-      console.error('Invalid weather data received:', weather);
+      // console.error('Invalid weather data received:', weather);
       return null;
     }
 
     // Add icons and cache
     const weatherWithIcons = addWeatherIcons(weather);
     weatherMemoCache.set(cityKey, weatherWithIcons);
-    actions.setWeatherCache(cityKey, { current_weather: weather });
+    actions.setWeatherCache(cityKey, {
+      current: {
+        temperature_2m: weather.temperature,
+        weathercode: weather.weathercode,
+        time: weather.time,
+      },
+    });
 
     return weatherWithIcons;
-  } catch (error) {
-    console.error('Error fetching current weather for city:', city?.name, error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
+    // console.error('Error fetching current weather for city:', city?.name, _error);
     return null;
   }
 }
@@ -436,7 +449,15 @@ export async function getForecast(city: City): Promise<ForecastWithIcons | null>
     // Check store cache
     const cached = actions.getWeatherCache(cityKey);
     if (cached?.daily) {
-      const forecastWithIcons = addForecastIcons(cached);
+      const forecast: Forecast = {
+        daily: {
+          time: cached.daily.time,
+          temperature_2m_max: cached.daily.temperature_2m_max,
+          temperature_2m_min: cached.daily.temperature_2m_min,
+          weathercode: cached.daily.weathercode,
+        },
+      };
+      const forecastWithIcons = addForecastIcons(forecast);
       forecastMemoCache.set(cityKey, forecastWithIcons);
       return forecastWithIcons;
     }
@@ -451,8 +472,9 @@ export async function getForecast(city: City): Promise<ForecastWithIcons | null>
     actions.setWeatherCache(cityKey, forecast);
 
     return forecastWithIcons;
-  } catch (error) {
-    console.error('Error fetching forecast:', error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
+    // console.error('Error fetching forecast:', _error);
     return null;
   }
 }
@@ -486,8 +508,9 @@ export async function getLocationForecast(): Promise<{
       location: locationData.city || 'Your Location (Approximate)',
       country: locationData.country_name || '',
     };
-  } catch (error) {
-    console.error('Error fetching location forecast:', error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
+    // console.error('Error fetching location forecast:', _error);
     return null;
   }
 }
@@ -503,7 +526,7 @@ export async function getWeatherForCities(
   const validCities = cities.filter(city => {
     const lat = Number(city.lat);
     // Try both 'lon' and 'lng' fields for longitude
-    const lon = Number(city.lon || (city as any).lng);
+    const lon = Number(city.lon ?? (city as { lng?: number }).lng ?? 0);
     return !isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
   });
 
@@ -531,8 +554,9 @@ export async function getWeatherForCities(
         if (weather) {
           return { cityName: normalized.name, weather };
         }
-      } catch (error) {
-        console.error(`Error fetching weather for ${city.name}:`, error);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_error) {
+        // console.error(`Error fetching weather for ${city.name}:`, _error);
       }
       return null;
     });
@@ -576,7 +600,7 @@ export async function prefetchWeatherForCities(cities: City[]): Promise<void> {
     // Process cities in background
     const validCities = cities.filter(city => {
       const lat = Number(city.lat);
-      const lon = Number(city.lon || (city as any).lng);
+      const lon = Number(city.lon ?? (city as { lng?: number }).lng ?? 0);
       return !isNaN(lat) && !isNaN(lon);
     });
 
@@ -594,7 +618,7 @@ export async function prefetchWeatherForCities(cities: City[]): Promise<void> {
         try {
           const normalized = normalizeCityMemoized(city);
           await getCurrentWeather(normalized);
-        } catch (error) {
+        } catch {
           // Silently fail for prefetching
         }
       });
@@ -663,11 +687,18 @@ export function getCacheStats(): {
 export function createWeatherError(
   message: string,
   code: string,
-  details?: any
+  details?: unknown
 ): WeatherServiceError {
   return { message, code, details };
 }
 
-export function isWeatherError(error: any): error is WeatherServiceError {
-  return error && typeof error === 'object' && 'code' in error && 'message' in error;
+export function isWeatherError(error: unknown): error is WeatherServiceError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    'message' in error &&
+    typeof (error as WeatherServiceError).code === 'string' &&
+    typeof (error as WeatherServiceError).message === 'string'
+  );
 }

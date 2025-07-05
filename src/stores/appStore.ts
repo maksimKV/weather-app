@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import type { WeatherData } from '$lib/types';
 
 export interface Country {
   code: string;
@@ -15,18 +16,26 @@ export interface City {
 export interface AppState {
   selectedCountry: Country | null;
   selectedCity: City | null;
-  weather: any;
+  weather: WeatherData | null;
 }
 
 function createAppStore() {
-  const stored = localStorage.getItem('appState');
+  let stored: string | null = null;
+
+  // Check if we're in a browser environment
+  if (typeof window !== 'undefined') {
+    stored = localStorage.getItem('appState');
+  }
+
   const initial: AppState = stored
     ? JSON.parse(stored)
     : { selectedCountry: null, selectedCity: null, weather: null };
   const { subscribe, set, update } = writable<AppState>(initial);
 
   subscribe(value => {
-    localStorage.setItem('appState', JSON.stringify(value));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('appState', JSON.stringify(value));
+    }
   });
 
   return {
@@ -35,7 +44,7 @@ function createAppStore() {
     update,
     setCountry: (country: Country | null) => update(s => ({ ...s, selectedCountry: country })),
     setCity: (city: City | null) => update(s => ({ ...s, selectedCity: city })),
-    setWeather: (weather: any) => update(s => ({ ...s, weather })),
+    setWeather: (weather: WeatherData | null) => update(s => ({ ...s, weather })),
   };
 }
 

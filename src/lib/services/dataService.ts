@@ -2,7 +2,7 @@
 // DATA SERVICE - Handles Country/City API Operations
 // ============================================================================
 
-import { actions, selectors } from '../../stores';
+import { actions } from '../../stores';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -27,8 +27,8 @@ export interface City {
 // API CONFIGURATION
 // ============================================================================
 
-const BATCH_SIZE = 1000;
-const MAX_BATCHES = 10;
+const BATCH_SIZE = 100;
+const MAX_BATCHES = 3;
 const REQUEST_DELAY_MS = 50; // Reduced for better performance
 const MAX_CONCURRENT_REQUESTS = 4; // Parallel batch processing
 const CACHE_DURATION_MS = 30 * 60 * 1000; // 30 minutes for data cache
@@ -88,13 +88,16 @@ const searchMemoCache = new DataMemoizationCache<City[]>();
 // ============================================================================
 
 class DataRequestQueue {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private queue: Array<() => Promise<any>> = [];
   private running = 0;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private requestCache = new Map<string, Promise<any>>();
 
   async add<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
     // Check if request is already in progress
     if (this.requestCache.has(key)) {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       return this.requestCache.get(key)!;
     }
 
@@ -224,8 +227,9 @@ export async function fetchCountries(): Promise<Country[]> {
     countriesMemoCache.set('all_countries', validCountries);
     try {
       sessionStorage.setItem('countries', JSON.stringify(validCountries));
-    } catch (storageError) {
-      console.warn('Failed to cache countries in sessionStorage:', storageError);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_storageError) {
+      // console.warn('Failed to cache countries in sessionStorage:', _storageError);
     }
 
     actions.setCountries(validCountries);
@@ -244,13 +248,15 @@ export async function fetchCountries(): Promise<Country[]> {
 // ============================================================================
 
 export async function fetchCities(): Promise<City[]> {
+  console.log('dataService.fetchCities: Starting...');
   try {
     actions.setLoading('cities', true);
     actions.setError('cities', null);
 
     // Check memoization cache first
     const memoized = citiesMemoCache.get('all_cities');
-    if (memoized) {
+    if (memoized && memoized.length > 0) {
+      console.log('dataService.fetchCities: Using memoized cities, count:', memoized.length);
       actions.setCities(memoized);
       return memoized;
     }
@@ -259,22 +265,33 @@ export async function fetchCities(): Promise<City[]> {
     const cachedCities = sessionStorage.getItem('cities');
     if (cachedCities) {
       const cities = JSON.parse(cachedCities);
-      citiesMemoCache.set('all_cities', cities);
-      actions.setCities(cities);
-      return cities;
+      if (cities.length > 0) {
+        console.log('dataService.fetchCities: Using cached cities, count:', cities.length);
+        citiesMemoCache.set('all_cities', cities);
+        actions.setCities(cities);
+        return cities;
+      } else {
+        console.log('dataService.fetchCities: Cached cities is empty, will fetch from API');
+      }
     }
+
+    console.log('dataService.fetchCities: No cache found or cache is empty, fetching from API...');
 
     // Fetch cities in parallel batches
     const allCities = await fetchCitiesInParallelBatches();
+
+    console.log('dataService.fetchCities: Fetched cities from API, count:', allCities.length);
 
     // Cache in memoization and sessionStorage
     citiesMemoCache.set('all_cities', allCities);
     sessionStorage.setItem('cities', JSON.stringify(allCities));
 
     actions.setCities(allCities);
+    console.log('dataService.fetchCities: Cities loaded into store successfully');
     return allCities;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch cities';
+    console.error('dataService.fetchCities: Error:', errorMessage);
     actions.setError('cities', errorMessage);
     throw error;
   } finally {
@@ -283,6 +300,7 @@ export async function fetchCities(): Promise<City[]> {
 }
 
 async function fetchCitiesInParallelBatches(): Promise<City[]> {
+  console.log('fetchCitiesInParallelBatches: Starting...');
   let allCities: City[] = [];
   let startRow = 0;
   let batchCount = 0;
@@ -297,6 +315,7 @@ async function fetchCitiesInParallelBatches(): Promise<City[]> {
     const batchPromise = dataRequestQueue.add(`cities_batch_${batchCount}`, async () => {
       try {
         const url = `/api/cities?maxRows=${BATCH_SIZE}&startRow=${currentStartRow}`;
+        console.log(`fetchCitiesInParallelBatches: Fetching batch ${batchCount} from:`, url);
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -308,30 +327,57 @@ async function fetchCitiesInParallelBatches(): Promise<City[]> {
 
         const responseText = await response.text();
         if (!responseText || responseText.trim() === '') {
+          console.log(`fetchCitiesInParallelBatches: Empty response for batch ${batchCount}`);
           return []; // No more data
         }
 
         const batch = JSON.parse(responseText);
+        console.log(`fetchCitiesInParallelBatches: Batch ${batchCount} received ${batch.length} cities`);
 
         if (Array.isArray(batch) && batch.length > 0) {
           // Normalize city data
           const normalizedBatch = batch
-            .map((city: any) => ({
-              name: city.name,
-              lat: Number(city.lat),
-              lon: Number(city.lon ?? city.lng),
-              country: city.country,
-              countryCode: city.countryCode,
-              geonameId: city.geonameId,
-            }))
-            .filter(city => !isNaN(city.lat) && !isNaN(city.lon));
+            .map((city: unknown) => {
+              if (
+                typeof city === 'object' &&
+                city !== null &&
+                'name' in city &&
+                'lat' in city &&
+                ('lon' in city || 'lng' in city)
+              ) {
+                const c = city as {
+                  name: string;
+                  lat: number;
+                  lon?: number;
+                  lng?: number;
+                  country?: string;
+                  countryCode?: string;
+                  geonameId?: number;
+                  population?: number;
+                };
+                return {
+                  name: c.name,
+                  lat: Number(c.lat),
+                  lon: Number(c.lon ?? c.lng),
+                  country: c.countryCode || c.country || 'Unknown',
+                  countryCode: c.countryCode || '',
+                  geonameId: c.geonameId,
+                  population: c.population,
+                };
+              }
+              return null;
+            })
+            .filter(isCity) as City[];
 
+          console.log(`fetchCitiesInParallelBatches: Batch ${batchCount} normalized to ${normalizedBatch.length} cities`);
           return normalizedBatch;
         }
 
         return [];
-      } catch (error) {
-        console.error(`Error in batch ${batchCount}:`, error);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_error) {
+        // console.error(`Error in batch ${batchCount}:`, _error);
+        console.error(`fetchCitiesInParallelBatches: Error in batch ${batchCount}:`, _error);
         return []; // Return empty array instead of failing completely
       }
     });
@@ -345,6 +391,8 @@ async function fetchCitiesInParallelBatches(): Promise<City[]> {
     }
   }
 
+  console.log(`fetchCitiesInParallelBatches: Created ${batchPromises.length} batch promises`);
+
   // Execute all batches in parallel
   const batchResults = await Promise.all(batchPromises);
 
@@ -355,8 +403,11 @@ async function fetchCitiesInParallelBatches(): Promise<City[]> {
     }
   }
 
+  console.log(`fetchCitiesInParallelBatches: Combined ${allCities.length} cities from all batches`);
+
   // Deduplicate by geonameId
   const uniqueCities = Array.from(new Map(allCities.map(c => [c.geonameId, c])).values());
+  console.log(`fetchCitiesInParallelBatches: After deduplication: ${uniqueCities.length} unique cities`);
 
   return uniqueCities;
 }
@@ -380,15 +431,37 @@ export async function fetchCitiesForCountry(countryCode: string): Promise<City[]
 
     if (Array.isArray(citiesData)) {
       const normalizedCities = citiesData
-        .map((city: any) => ({
-          name: city.name,
-          lat: Number(city.lat),
-          lon: Number(city.lon ?? city.lng),
-          country: city.country,
-          countryCode: city.countryCode,
-          geonameId: city.geonameId,
-        }))
-        .filter(city => !isNaN(city.lat) && !isNaN(city.lon));
+        .map((city: unknown) => {
+          if (
+            typeof city === 'object' &&
+            city !== null &&
+            'name' in city &&
+            'lat' in city &&
+            ('lon' in city || 'lng' in city)
+          ) {
+            const c = city as {
+              name: string;
+              lat: number;
+              lon?: number;
+              lng?: number;
+              country?: string;
+              countryCode?: string;
+              geonameId?: number;
+              population?: number;
+            };
+            return {
+              name: c.name,
+              lat: Number(c.lat),
+              lon: Number(c.lon ?? c.lng),
+              country: c.countryCode || c.country || 'Unknown',
+              countryCode: c.countryCode || '',
+              geonameId: c.geonameId,
+              population: c.population,
+            };
+          }
+          return null;
+        })
+        .filter(isCity) as City[];
 
       // Cache the result
       citiesMemoCache.set(`country_${countryCode}`, normalizedCities);
@@ -399,8 +472,9 @@ export async function fetchCitiesForCountry(countryCode: string): Promise<City[]
     }
 
     return [];
-  } catch (err) {
-    console.error(`Error fetching cities for ${countryCode}:`, err);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_err) {
+    // console.error(`Error fetching cities for ${countryCode}:`, _err);
     return [];
   }
 }
@@ -431,15 +505,37 @@ export async function searchCities(query: string, countryCode?: string): Promise
 
     if (Array.isArray(citiesData)) {
       const normalizedCities = citiesData
-        .map((city: any) => ({
-          name: city.name,
-          lat: Number(city.lat),
-          lon: Number(city.lon ?? city.lng),
-          country: city.country,
-          countryCode: city.countryCode,
-          geonameId: city.geonameId,
-        }))
-        .filter(city => !isNaN(city.lat) && !isNaN(city.lon));
+        .map((city: unknown) => {
+          if (
+            typeof city === 'object' &&
+            city !== null &&
+            'name' in city &&
+            'lat' in city &&
+            ('lon' in city || 'lng' in city)
+          ) {
+            const c = city as {
+              name: string;
+              lat: number;
+              lon?: number;
+              lng?: number;
+              country?: string;
+              countryCode?: string;
+              geonameId?: number;
+              population?: number;
+            };
+            return {
+              name: c.name,
+              lat: Number(c.lat),
+              lon: Number(c.lon ?? c.lng),
+              country: c.countryCode || c.country || 'Unknown',
+              countryCode: c.countryCode || '',
+              geonameId: c.geonameId,
+              population: c.population,
+            };
+          }
+          return null;
+        })
+        .filter(isCity) as City[];
 
       // Cache the result
       searchMemoCache.set(cacheKey, normalizedCities);
@@ -447,8 +543,9 @@ export async function searchCities(query: string, countryCode?: string): Promise
     }
 
     return [];
-  } catch (error) {
-    console.error(`Error searching cities for "${query}":`, error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
+    // console.error(`Error searching cities for "${query}":`, _error);
     return [];
   }
 }
@@ -465,8 +562,9 @@ export function clearDataCache(): void {
   try {
     sessionStorage.removeItem('countries');
     sessionStorage.removeItem('cities');
-  } catch (error) {
-    console.warn('Failed to clear sessionStorage cache:', error);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_error) {
+    // console.warn('Failed to clear sessionStorage cache:', _error);
   }
 }
 
@@ -493,30 +591,46 @@ export function getDataCacheStats(): {
 // ============================================================================
 
 export async function initializeData(): Promise<void> {
-  try {
-    // Fetch countries and cities in parallel
-    const [countries, cities] = await Promise.all([fetchCountries(), fetchCities()]);
-  } catch (error) {
-    console.error('Failed to initialize data:', error);
-    throw error;
-  }
+  // Fetch countries and cities in parallel
+  await Promise.all([fetchCountries(), fetchCities()]);
 }
 
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
-export function normalizeCity(city: any): City {
-  return {
-    name: city.name,
-    lat: Number(city.lat),
-    lon: Number(city.lon ?? city.lng),
-    country: city.country,
-    countryCode: city.countryCode,
-    geonameId: city.geonameId,
-  };
+export function normalizeCity(city: unknown): City {
+  if (typeof city === 'object' && city !== null && 'name' in city && 'lat' in city) {
+    const c = city as {
+      name: string;
+      lat: number;
+      lon?: number;
+      lng?: number;
+      country?: string;
+      countryCode?: string;
+    };
+    return {
+      name: c.name,
+      lat: c.lat,
+      lon: c.lon ?? c.lng ?? 0,
+      country: c.countryCode ?? c.country ?? 'Unknown',
+    };
+  }
+  throw new Error('Invalid city object');
 }
 
 export function createCityKey(city: City): string {
   return `${city.name}|${city.lat}|${city.lon}`;
+}
+
+// Add a type guard for City
+function isCity(obj: unknown): obj is City {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'name' in obj &&
+    'lat' in obj &&
+    typeof (obj as Record<string, unknown>).name === 'string' &&
+    typeof (obj as Record<string, unknown>).lat === 'number'
+  );
 }
