@@ -358,4 +358,13 @@
       gap: 0.5em;
     }
   }
+
+  @media (max-width: 600px) {
+    .chart-legend {
+      flex-direction: row;
+    }
+    .country-weather-chart {
+      padding-bottom: 2.7em;
+    }
+  }
 </style>
