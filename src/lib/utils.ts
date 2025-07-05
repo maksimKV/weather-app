@@ -84,8 +84,7 @@ export function createResizeHandler(callback: () => void): () => void {
     try {
       callback();
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error in resize handler:', error);
+      logDevError('Error in resize handler:', error);
     }
   };
 }
@@ -204,4 +203,14 @@ export function getErrorCategory(error: Error): string {
   if (error.message.includes('API')) return 'API Error';
   if (error.message.includes('JSON')) return 'Data Error';
   return 'Unknown Error';
+}
+
+/**
+ * Log errors only in development
+ */
+export function logDevError(...args: unknown[]) {
+  if (import.meta.env && import.meta.env.DEV) {
+    // eslint-disable-next-line no-console
+    console.error(...args);
+  }
 }

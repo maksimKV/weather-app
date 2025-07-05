@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import { cities } from './index';
 import type { City } from '../lib/types';
+import { logDevError } from '../lib/utils';
 
 interface Country {
   countryCode: string;
@@ -105,8 +106,7 @@ export async function fetchAndCacheCountriesCities() {
           keepFetching = false;
         }
       } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error fetching cities batch:', error);
+        logDevError('Error fetching cities batch:', error);
         // Continue with the cities we've already fetched instead of failing completely
         keepFetching = false;
       }
@@ -166,8 +166,7 @@ export async function fetchCitiesForCountry(countryCode: string) {
       });
     }
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error fetching additional cities for country:', error);
-    // Silently handle errors for additional city fetching
+    logDevError('Error fetching additional cities for country:', error);
+    // Continue with what we have
   }
 }

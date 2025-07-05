@@ -4,6 +4,7 @@
   import { initializeData } from '../lib/services/dataService';
   import { setupGlobalErrorHandlers } from '../lib/errorBoundary';
   import ErrorBoundary from '../components/ErrorBoundary.svelte';
+  import { logDevError } from '../lib/utils';
 
   onMount(() => {
     // Setup global error handlers
@@ -11,7 +12,7 @@
 
     // Initialize data with error handling
     initializeData().catch(error => {
-      console.error('Failed to initialize app data:', error);
+      logDevError('Failed to initialize app data:', error);
     });
   });
 </script>

@@ -2,8 +2,15 @@
 // ERROR BOUNDARY SYSTEM
 // ============================================================================
 
+/**
+ * Error Handling Approach:
+ * - UI errors are handled by ErrorBoundary.svelte and errorStore.
+ * - Service/store errors should use actions.setError for user-facing errors.
+ * - Use logDevError for dev-only logging instead of console.error.
+ */
 import { writable, type Writable } from 'svelte/store';
 import type { ErrorInfo } from './types';
+import { logDevError } from './utils';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -105,18 +112,18 @@ export function createErrorBoundary(options: ErrorBoundaryOptions = {}) {
           onError(error, errorInfo);
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_handlerError) {
-          // console.error('Error in error handler:', _handlerError);
+          logDevError('Error in error handler:', _handlerError);
         }
       }
 
       // Log error for debugging
-      // console.error('Error Boundary caught error:', {
-      //   error: error.message,
-      //   stack: error.stack,
-      //   info: errorInfo,
-      //   category: getErrorCategory(error),
-      //   recoverable: isErrorRecoverable(error),
-      // });
+      logDevError('Error Boundary caught error:', {
+        error: error.message,
+        stack: error.stack,
+        info: errorInfo,
+        category: getErrorCategory(error),
+        recoverable: isErrorRecoverable(error),
+      });
     },
 
     // Reset error state
@@ -207,7 +214,7 @@ export function createDefaultFallback(error: Error, _errorInfo: unknown) {
 export function setupGlobalErrorHandlers() {
   // Handle unhandled promise rejections
   window.addEventListener('unhandledrejection', event => {
-    // console.error('Unhandled promise rejection:', event.reason);
+    logDevError('Unhandled promise rejection:', event.reason);
     errorStore.set({
       hasError: true,
       error: new Error(`Unhandled Promise Rejection: ${event.reason}`),
@@ -219,7 +226,7 @@ export function setupGlobalErrorHandlers() {
 
   // Handle global errors
   window.addEventListener('error', event => {
-    // console.error('Global error:', event.error);
+    logDevError('Global error:', event.error);
     errorStore.set({
       hasError: true,
       error: event.error || new Error(event.message),
@@ -233,7 +240,7 @@ export function setupGlobalErrorHandlers() {
     (
       window as unknown as { __SVELTE_ERROR_HANDLER__?: (error: Error) => void }
     ).__SVELTE_ERROR_HANDLER__ = (error: Error) => {
-      // console.error('Svelte error:', error);
+      logDevError('Svelte error:', error);
       errorStore.set({
         hasError: true,
         error,
@@ -259,8 +266,7 @@ export function safeAccess<T>(obj: unknown, path: string[], defaultValue: T): T 
     }
     return current !== undefined ? (current as T) : defaultValue;
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error in safeAccess:', error);
+    logDevError('Error in safeAccess:', error);
     return defaultValue;
   }
 }
@@ -269,8 +275,7 @@ export function safeCall<T>(fn: () => T, defaultValue: T): T {
   try {
     return fn();
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error in safeCall:', error);
+    logDevError('Error in safeCall:', error);
     return defaultValue;
   }
 }

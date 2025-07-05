@@ -4,6 +4,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { Chart, registerables } from 'chart.js';
   import type { City, ChartContainer } from '../lib/types';
+  import { logDevError } from '../lib/utils';
 
   // Register all Chart.js components
   Chart.register(...registerables);
@@ -160,7 +161,7 @@
         },
       });
     } catch (error) {
-      console.error('Error creating country weather chart:', error);
+      logDevError('Error creating country weather chart:', error);
       chart = null;
     }
   }

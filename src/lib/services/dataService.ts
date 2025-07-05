@@ -2,7 +2,13 @@
 // DATA SERVICE - Handles Country/City API Operations
 // ============================================================================
 
+/**
+ * Error Handling Approach:
+ * - All user-facing errors should use actions.setError(key, message).
+ * - Use logDevError for dev-only logging instead of console.error.
+ */
 import { actions } from '../../stores';
+import { logDevError } from '../utils';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -359,8 +365,10 @@ async function fetchCitiesInParallelBatches(): Promise<City[]> {
 
         return [];
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (_error) {
-        return []; // Return empty array instead of failing completely
+      } catch (error) {
+        logDevError('Error fetching cities batch:', error);
+        // Continue with the cities we've already fetched instead of failing completely
+        return [];
       }
     });
 
@@ -409,8 +417,7 @@ export async function fetchCitiesForCountry(countryCode: string): Promise<City[]
         }
       }
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error fetching largest city for heuristic calculation:', error);
+      logDevError('Error fetching largest city for heuristic calculation:', error);
     }
 
     const citiesData = await dataRequestQueue.add(`cities_country_${countryCode}`, async () => {
@@ -465,8 +472,7 @@ export async function fetchCitiesForCountry(countryCode: string): Promise<City[]
 
     return [];
   } catch (_err) {
-    // eslint-disable-next-line no-console
-    console.error(`Error fetching cities for ${countryCode}:`, _err);
+    logDevError(`Error fetching cities for ${countryCode}:`, _err);
     return [];
   }
 }
@@ -536,8 +542,7 @@ export async function searchCities(query: string, countryCode?: string): Promise
 
     return [];
   } catch (_error) {
-    // eslint-disable-next-line no-console
-    console.error(`Error searching cities for "${query}":`, _error);
+    logDevError(`Error searching cities for "${query}":`, _error);
     return [];
   }
 }
@@ -555,8 +560,7 @@ export function clearDataCache(): void {
     sessionStorage.removeItem('countries');
     sessionStorage.removeItem('cities');
   } catch (_error) {
-    // eslint-disable-next-line no-console
-    console.error('Failed to clear sessionStorage cache:', _error);
+    logDevError('Failed to clear sessionStorage cache:', _error);
   }
 }
 

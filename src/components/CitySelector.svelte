@@ -2,6 +2,7 @@
   import { createEventDispatcher, onMount } from 'svelte';
   import { cities, citiesLoaded } from '../stores';
   import type { City } from '../lib/types';
+  import { logDevError } from '../lib/utils';
 
   export let selected: City | null = null;
   export let clearTrigger: number = 0;
@@ -31,7 +32,7 @@
       const data = await res.json();
       filtered = Array.isArray(data) ? data : [];
     } catch (error) {
-      console.error('Error searching cities:', error);
+      logDevError('Error searching cities:', error);
       filtered = [];
     }
     loading = false;

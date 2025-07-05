@@ -3,6 +3,7 @@
   import maplibregl from 'maplibre-gl';
   import type { City } from '../lib/types';
   import { safeCall, validateCityData } from '../lib/errorBoundary';
+  import { logDevError } from '../lib/utils';
   import 'maplibre-gl/dist/maplibre-gl.css';
 
   export let cities: City[] = [];
@@ -23,7 +24,7 @@
       markers.forEach(m => m.remove());
       markers = [];
     } catch (error) {
-      console.error('Error clearing markers:', error);
+      logDevError('Error clearing markers:', error);
     }
   }
 
@@ -56,7 +57,7 @@
           try {
             onMarkerClick(city);
           } catch (error) {
-            console.error('Error in marker click handler:', error);
+            logDevError('Error in marker click handler:', error);
           }
         };
 
@@ -65,7 +66,7 @@
             try {
               onMarkerClick(city);
             } catch (error) {
-              console.error('Error in marker keydown handler:', error);
+              logDevError('Error in marker keydown handler:', error);
             }
           }
         };
@@ -89,7 +90,7 @@
         markers.push(marker);
       }
     } catch (error) {
-      console.error('Error adding markers:', error);
+      logDevError('Error adding markers:', error);
       mapError = true;
     }
   }
@@ -105,7 +106,7 @@
       });
 
       map.on('error', e => {
-        console.error('Map error:', e);
+        logDevError('Map error:', e);
         mapError = true;
       });
 
@@ -114,12 +115,12 @@
           try {
             map.remove();
           } catch (error) {
-            console.error('Error removing map:', error);
+            logDevError('Error removing map:', error);
           }
         }
       };
     } catch (error) {
-      console.error('Error initializing map:', error);
+      logDevError('Error initializing map:', error);
       mapError = true;
     }
   });
@@ -142,7 +143,7 @@
         zoom: 8,
       });
     } catch (error) {
-      console.error('Error flying to selected city:', error);
+      logDevError('Error flying to selected city:', error);
     }
   } else if (map && !mapError && cities.length) {
     try {
@@ -163,7 +164,7 @@
         map.fitBounds(bounds, { padding: 120, duration: 800 });
       }
     } catch (error) {
-      console.error('Error fitting map bounds:', error);
+      logDevError('Error fitting map bounds:', error);
     }
   }
 </script>

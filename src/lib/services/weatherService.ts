@@ -1,6 +1,6 @@
 import { actions, selectors } from '../../stores';
 import type { City } from '../types';
-import { normalizeCity as normalizeCityUtil } from '../utils';
+import { normalizeCity as normalizeCityUtil, logDevError } from '../utils';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -380,7 +380,7 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
   try {
     // Validate city data
     if (!city) {
-      // console.error('No city data provided for weather fetch');
+      logDevError('No city data provided for weather fetch');
       return null;
     }
 
@@ -389,12 +389,12 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
     const lon = Number(city.lon ?? (city as { lng?: number }).lng ?? 0);
 
     if (isNaN(lat) || isNaN(lon)) {
-      // console.error('Invalid coordinates for weather fetch:', city);
+      logDevError('Invalid coordinates for weather fetch:', city);
       return null;
     }
 
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-      // console.error('Coordinates out of valid range:', { lat, lon });
+      logDevError('Coordinates out of valid range:', { lat, lon });
       return null;
     }
 
@@ -426,13 +426,13 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
     // Fetch from API
     const weather = await fetchCurrentWeatherRaw(normalizedCity.lat, normalizedCity.lon);
     if (!weather) {
-      // console.warn('No weather data received for city:', city.name);
+      logDevError('No weather data received for city:', city.name);
       return null;
     }
 
     // Validate weather data
     if (!weather.temperature || typeof weather.temperature !== 'number') {
-      // console.error('Invalid weather data received:', weather);
+      logDevError('Invalid weather data received:', weather);
       return null;
     }
 
@@ -449,8 +449,7 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
 
     return weatherWithIcons;
   } catch (_error) {
-    // eslint-disable-next-line no-console
-    console.error('Error fetching weather data:', _error);
+    logDevError('Error fetching weather data:', _error);
     return null;
   }
 }
@@ -494,7 +493,7 @@ export async function getForecast(city: City): Promise<ForecastWithIcons | null>
     return forecastWithIcons;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_error) {
-    // console.error('Error fetching forecast:', _error);
+    logDevError('Error fetching forecast:', _error);
     return null;
   }
 }
@@ -535,8 +534,7 @@ export async function getLocationForecast(): Promise<{
       country_code: locationData.country_code,
     };
   } catch (_error) {
-    // eslint-disable-next-line no-console
-    console.error('Error fetching forecast:', _error);
+    logDevError('Error fetching forecast:', _error);
     return null;
   }
 }
@@ -582,7 +580,7 @@ export async function getWeatherForCities(
         }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (_error) {
-        // console.error(`Error fetching weather for ${city.name}:`, _error);
+        logDevError(`Error fetching weather for ${city.name}:`, _error);
       }
       return null;
     });
@@ -645,8 +643,7 @@ export async function prefetchWeatherForCities(cities: City[]): Promise<void> {
           const normalized = normalizeCityMemoized(city);
           await getCurrentWeather(normalized);
         } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error('Error in weather prefetching:', error);
+          logDevError('Error in weather prefetching:', error);
           // Silently fail for prefetching
         }
       });

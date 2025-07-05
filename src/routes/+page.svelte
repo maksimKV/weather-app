@@ -41,6 +41,7 @@
   import { fly, fade } from 'svelte/transition';
   import { onMount, tick } from 'svelte';
   import type { City, Country } from '../lib/types';
+  import { logDevError } from '../lib/utils';
 
   // Weather icons are available via WEATHER_ICONS import
 
@@ -86,7 +87,7 @@
       // Validate cities before fetching weather
       const validCities = countryCities.filter(city => validateCityData(city));
       if (validCities.length === 0) {
-        console.warn('No valid cities found for weather fetch');
+        logDevError('No valid cities found for weather fetch');
         return;
       }
 
@@ -113,7 +114,7 @@
 
       actions.setMultipleCityWeather(validWeatherResults);
     } catch (error) {
-      console.error('Error loading city weather:', error);
+      logDevError('Error loading city weather:', error);
       actions.setError(
         'weather',
         error instanceof Error ? error.message : 'Failed to load weather'
@@ -130,7 +131,7 @@
     try {
       // Validate city data before fetching weather
       if (!validateCityData($selectedCity)) {
-        console.warn('Invalid city data for weather fetch:', $selectedCity);
+        logDevError('Invalid city data for weather fetch:', $selectedCity);
         return;
       }
 
@@ -149,10 +150,10 @@
         };
         actions.setCityWeather($selectedCity.name, weatherData);
       } else {
-        console.warn('Invalid weather data received for city:', $selectedCity.name);
+        logDevError('Invalid weather data received for city:', $selectedCity.name);
       }
     } catch (error) {
-      console.error('Error loading selected city weather:', error);
+      logDevError('Error loading selected city weather:', error);
       actions.setError(
         'weather',
         error instanceof Error ? error.message : 'Failed to load city weather'
@@ -169,7 +170,7 @@
 
       // Validate city data before fetching forecast
       if (!validateCityData($selectedCity)) {
-        console.warn('Invalid city data for forecast fetch:', $selectedCity);
+        logDevError('Invalid city data for forecast fetch:', $selectedCity);
         actions.setCurrentForecast(null);
         return;
       }
@@ -178,11 +179,11 @@
       if (forecastData && validateWeatherData(forecastData)) {
         actions.setCurrentForecast(forecastData);
       } else {
-        console.warn('Invalid forecast data received for city:', $selectedCity.name);
+        logDevError('Invalid forecast data received for city:', $selectedCity.name);
         actions.setCurrentForecast(null);
       }
     } catch (error) {
-      console.error('Error loading forecast:', error);
+      logDevError('Error loading forecast:', error);
       actions.setCurrentForecast(null);
       actions.setError(
         'weather',
@@ -198,7 +199,7 @@
     try {
       // Validate country data
       if (!e.detail || !validateCountryData(e.detail)) {
-        console.warn('Invalid country data received:', e.detail);
+        logDevError('Invalid country data received:', e.detail);
         return;
       }
 
@@ -221,7 +222,7 @@
         loadCityWeather();
       }
     } catch (error) {
-      console.error('Error handling country selection:', error);
+      logDevError('Error handling country selection:', error);
       actions.setError(
         'cities',
         error instanceof Error ? error.message : 'Failed to load country data'
@@ -235,14 +236,14 @@
 
       // Validate city data
       if (!selectedCityData || !validateCityData(selectedCityData)) {
-        console.warn('Invalid city data received:', selectedCityData);
+        logDevError('Invalid city data received:', selectedCityData);
         return;
       }
 
       actions.setSelectedCity(selectedCityData);
       cityManuallySelected = true;
     } catch (error) {
-      console.error('Error handling city selection:', error);
+      logDevError('Error handling city selection:', error);
       actions.setError('weather', error instanceof Error ? error.message : 'Failed to select city');
     }
   }
@@ -277,7 +278,7 @@
         throw new Error('Failed to fetch location forecast');
       }
     } catch (error) {
-      console.error('Error detecting user location for forecast:', error);
+      logDevError('Error detecting user location for forecast:', error);
       actions.setLocationData({
         forecast: null,
         name: 'Location unavailable',
@@ -310,7 +311,7 @@
         detectLocation();
       }, 500);
     } catch (error) {
-      console.error('Failed to initialize app:', error);
+      logDevError('Failed to initialize app:', error);
       // The error will be handled by the error boundary
     }
   });
@@ -393,10 +394,10 @@
               actions.setSelectedCity(city);
               cityManuallySelected = true;
             } else {
-              console.warn('Invalid city data in marker click:', city);
+              logDevError('Invalid city data in marker click:', city);
             }
           } catch (error) {
-            console.error('Error handling marker click:', error);
+            logDevError('Error handling marker click:', error);
           }
         }}
       />

@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { errorStore, type ErrorBoundaryState } from '../lib/errorBoundary';
   import type { ErrorInfo } from '../lib/types';
+  import { logDevError } from '../lib/utils';
 
   let hasError = false;
   let error: Error | null = null;
@@ -22,7 +23,7 @@
     errorInfo = info;
 
     // Log error
-    console.error('ErrorBoundary caught error:', {
+    logDevError('ErrorBoundary caught error:', {
       error: err.message,
       stack: err.stack,
       info,

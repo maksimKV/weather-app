@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import WeatherCard from './WeatherCard.svelte';
   import { safeAccess, safeCall, validateWeatherData } from '../lib/errorBoundary';
-  import { getDaysToShow, createResizeHandler, formatDate } from '../lib/utils';
+  import { getDaysToShow, createResizeHandler, formatDate, logDevError } from '../lib/utils';
   import type { WeatherData } from '../lib/types';
 
   export let forecast: WeatherData | null = null;
@@ -20,7 +20,7 @@
       resizeHandler = createResizeHandler(updateDaysToShow);
       window.addEventListener('resize', resizeHandler);
     } catch (error) {
-      console.error('Error setting up ForecastPanel:', error);
+      logDevError('Error setting up ForecastPanel:', error);
     }
   });
 
@@ -30,7 +30,7 @@
         window.removeEventListener('resize', resizeHandler);
       }
     } catch (error) {
-      console.error('Error cleaning up ForecastPanel:', error);
+      logDevError('Error cleaning up ForecastPanel:', error);
     }
   });
 

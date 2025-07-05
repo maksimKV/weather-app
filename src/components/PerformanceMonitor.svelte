@@ -3,6 +3,7 @@
   import { getCacheStats } from '../lib/services/weatherService';
   import { getDataCacheStats } from '../lib/services/dataService';
   import type { CacheStats, DataCacheStats } from '../lib/types';
+  import { logDevError } from '../lib/utils';
 
   let weatherStats: CacheStats = {
     size: 0,
@@ -24,7 +25,7 @@
       weatherStats = getCacheStats();
       dataStats = getDataCacheStats();
     } catch (error) {
-      console.error('Error updating performance stats:', error);
+      logDevError('Error updating performance stats:', error);
     }
   }
 

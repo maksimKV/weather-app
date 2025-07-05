@@ -2,9 +2,15 @@
 // UNIFIED STATE MANAGEMENT SYSTEM
 // ============================================================================
 
+/**
+ * Error Handling Approach:
+ * - All user-facing errors should use actions.setError(key, message).
+ * - Use logDevError for dev-only logging instead of console.error.
+ */
 import { writable, derived, get } from 'svelte/store';
 import type { ForecastWithIcons } from '../lib/services/weatherService';
 import type { WeatherData, City } from '$lib/types';
+import { logDevError } from '../lib/utils';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -226,8 +232,7 @@ function loadFromStorage<T>(key: string, defaultValue: T): T {
     const stored = localStorage.getItem(key);
     return stored ? JSON.parse(stored) : defaultValue;
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error loading from storage:', error);
+    logDevError('Error loading from storage:', error);
     return defaultValue;
   }
 }
@@ -238,8 +243,7 @@ function saveToStorage(key: string, value: unknown): void {
       localStorage.setItem(key, JSON.stringify(value));
     }
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error('Error saving to storage:', error);
+    logDevError('Error saving to storage:', error);
     // Silently handle storage errors
   }
 }
