@@ -214,3 +214,46 @@ export function logDevError(...args: unknown[]) {
     console.error(...args);
   }
 }
+
+export function isValidCountryArray(data: unknown): data is { countryCode: string; countryName: string }[] {
+  return (
+    Array.isArray(data) &&
+    data.every(
+      c =>
+        c &&
+        typeof c.countryCode === 'string' &&
+        typeof c.countryName === 'string'
+    )
+  );
+}
+
+export function isValidCityArray(data: unknown): data is { name: string; lat: number; lon: number; country: string }[] {
+  return (
+    Array.isArray(data) &&
+    data.every(
+      c =>
+        c &&
+        typeof c.name === 'string' &&
+        typeof c.lat === 'number' &&
+        typeof c.lon === 'number' &&
+        typeof c.country === 'string'
+    )
+  );
+}
+
+export function isValidWeatherData(data: unknown): boolean {
+  if (!data || typeof data !== 'object') return false;
+  const d = data as Record<string, unknown>;
+  if (d.daily && typeof d.daily === 'object') {
+    const daily = d.daily as Record<string, unknown>;
+    const required = ['time', 'temperature_2m_min', 'temperature_2m_max', 'weathercode'];
+    return required.every(prop => Array.isArray(daily[prop]));
+  }
+  if (
+    (d as Record<string, unknown>).temperature !== undefined &&
+    (d as Record<string, unknown>).weathercode !== undefined
+  ) {
+    return true;
+  }
+  return false;
+}

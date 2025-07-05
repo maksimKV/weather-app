@@ -8,7 +8,7 @@
  * - Use logDevError for dev-only logging instead of console.error.
  */
 import { actions } from '../../stores';
-import { logDevError } from '../utils';
+import { logDevError, isValidCountryArray, isValidCityArray } from '../utils';
 import type { City, Country } from '../types';
 
 // ============================================================================
@@ -199,9 +199,12 @@ export async function fetchCountries(): Promise<Country[]> {
       return makeRequest<Country[]>('/api/countries');
     });
 
-    // Validate countries data
-    if (!Array.isArray(countries)) {
-      throw new Error('Invalid countries data format');
+    // Standardized validation
+    if (!isValidCountryArray(countries)) {
+      const msg = 'Invalid countries data format';
+      actions.setError('countries', msg);
+      logDevError(msg, countries);
+      return [];
     }
 
     const validCountries = countries.filter(
@@ -229,7 +232,8 @@ export async function fetchCountries(): Promise<Country[]> {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch countries';
     actions.setError('countries', errorMessage);
-    throw error;
+    logDevError('Error fetching countries:', error);
+    return [];
   } finally {
     actions.setLoading('countries', false);
   }
@@ -255,7 +259,7 @@ export async function fetchCities(): Promise<City[]> {
     const cachedCities = sessionStorage.getItem('cities');
     if (cachedCities) {
       const cities = JSON.parse(cachedCities);
-      if (cities.length > 0) {
+      if (isValidCityArray(cities) && cities.length > 0) {
         citiesMemoCache.set('all_cities', cities);
         actions.setCities(cities);
         return cities;
@@ -265,7 +269,14 @@ export async function fetchCities(): Promise<City[]> {
     // Fetch cities in parallel batches
     const allCities = await fetchCitiesInParallelBatches();
 
-    // Cache in memoization and sessionStorage
+    // Standardized validation
+    if (!isValidCityArray(allCities)) {
+      const msg = 'Invalid cities data format';
+      actions.setError('cities', msg);
+      logDevError(msg, allCities);
+      return [];
+    }
+
     citiesMemoCache.set('all_cities', allCities);
     sessionStorage.setItem('cities', JSON.stringify(allCities));
 
@@ -274,7 +285,8 @@ export async function fetchCities(): Promise<City[]> {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch cities';
     actions.setError('cities', errorMessage);
-    throw error;
+    logDevError('Error fetching cities:', error);
+    return [];
   } finally {
     actions.setLoading('cities', false);
   }

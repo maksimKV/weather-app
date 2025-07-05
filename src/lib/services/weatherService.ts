@@ -1,7 +1,7 @@
 import { actions, selectors } from '../../stores';
 import { logDevError } from '../utils';
 import type { City } from '../types';
-import { normalizeCity as normalizeCityUtil } from '../utils';
+import { normalizeCity as normalizeCityUtil, isValidWeatherData } from '../utils';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -426,14 +426,8 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
 
     // Fetch from API
     const weather = await fetchCurrentWeatherRaw(normalizedCity.lat, normalizedCity.lon);
-    if (!weather) {
-      logDevError('No weather data received for city:', city.name);
-      return null;
-    }
-
-    // Validate weather data
-    if (!weather.temperature || typeof weather.temperature !== 'number') {
-      logDevError('Invalid weather data received:', weather);
+    if (!weather || !isValidWeatherData(weather)) {
+      logDevError('Invalid weather data received for city:', city.name, weather);
       return null;
     }
 
@@ -449,8 +443,8 @@ export async function getCurrentWeather(city: City): Promise<WeatherWithIcon | n
     });
 
     return weatherWithIcons;
-  } catch (_error) {
-    logDevError('Error fetching weather data:', _error);
+  } catch (error) {
+    logDevError('Error fetching current weather:', error);
     return null;
   }
 }
@@ -484,7 +478,10 @@ export async function getForecast(city: City): Promise<ForecastWithIcons | null>
 
     // Fetch from API
     const forecast = await fetchForecastRaw(normalizedCity.lat, normalizedCity.lon);
-    if (!forecast) return null;
+    if (!forecast || !isValidWeatherData(forecast)) {
+      logDevError('Invalid forecast data received for city:', city.name, forecast);
+      return null;
+    }
 
     // Add icons and cache
     const forecastWithIcons = addForecastIcons(forecast);
@@ -492,8 +489,8 @@ export async function getForecast(city: City): Promise<ForecastWithIcons | null>
     actions.setWeatherCache(cityKey, forecast);
 
     return forecastWithIcons;
-  } catch (_error) {
-    logDevError('Error fetching forecast:', _error);
+  } catch (error) {
+    logDevError('Error fetching forecast:', error);
     return null;
   }
 }
