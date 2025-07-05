@@ -211,8 +211,8 @@
 
       await tick();
 
-      // If no cities found for this country, fetch additional cities
-      if (countryCities.length === 0) {
+      // If few cities found for this country, fetch additional cities
+      if (countryCities.length < 5) {
         await fetchCitiesForCountry(e.detail.countryCode);
         await tick(); // Wait for cities to update
       }
