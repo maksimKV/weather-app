@@ -297,15 +297,17 @@ export function validateWeatherData(data: unknown): boolean {
   return false;
 }
 
-export function validateCityData(data: Record<string, unknown>): boolean {
+export function validateCityData(data: unknown): boolean {
   if (!data || typeof data !== 'object') return false;
 
+  const city = data as Record<string, unknown>;
+
   // Check for required properties
-  if (!data.name || typeof data.name !== 'string') return false;
+  if (!city.name || typeof city.name !== 'string') return false;
 
   // Check for coordinates - allow both string and number types
-  const lat = data.lat;
-  const lon = data.lon || data.lng;
+  const lat = city.lat;
+  const lon = city.lon || city.lng;
 
   if (lat === undefined || lat === null) return false;
   if (lon === undefined || lon === null) return false;
@@ -321,9 +323,10 @@ export function validateCityData(data: Record<string, unknown>): boolean {
   return true;
 }
 
-export function validateCountryData(data: Record<string, unknown>): boolean {
+export function validateCountryData(data: unknown): boolean {
   if (!data || typeof data !== 'object') return false;
 
+  const country = data as Record<string, unknown>;
   const required = ['countryCode', 'countryName'];
-  return required.every(prop => data[prop] !== undefined);
+  return required.every(prop => country[prop] !== undefined);
 }

@@ -4,6 +4,7 @@
   import MapView from '../components/MapView.svelte';
   import ForecastPanel from '../components/ForecastPanel.svelte';
   import LocationForecastCard from '../components/LocationForecastCard.svelte';
+  import CountryWeatherChart from '../components/CountryWeatherChart.svelte';
   import ErrorBoundary from '../components/ErrorBoundary.svelte';
   import PerformanceMonitor from '../components/PerformanceMonitor.svelte';
   import {
@@ -407,6 +408,7 @@
   <ErrorBoundary>
     <div class="forecast-section" in:fade>
       {#if $selectedCity && cityManuallySelected}
+        <!-- City selected - show forecast panel -->
         {#if loadingForecast}
           <div class="loading-message">
             <div class="loading-spinner"></div>
@@ -424,7 +426,19 @@
             <p>No forecast data available for {$selectedCity.name}</p>
           </div>
         {/if}
+      {:else if $selectedCountry && countryCities.length > 0}
+        <!-- Country selected but no city - show temperature chart -->
+        <ErrorBoundary>
+          <CountryWeatherChart
+            cities={countryCities}
+            weatherData={cityWeather}
+            countryName={$selectedCountry.countryName}
+            height="400px"
+            maxCities={15}
+          />
+        </ErrorBoundary>
       {/if}
+
       {#if loadingLocationForecast}
         <div class="loading-message">
           <div class="loading-spinner"></div>
