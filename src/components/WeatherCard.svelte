@@ -70,70 +70,46 @@
     height={mainIconSize}
     on:error={() => (safeMainIcon = '/weather-icons/unknown.svg')}
   />
-  <div class="temps">
-    <span class="min-temp temp-block">
-      <span class="temp-row"
-        ><img
-          class="temp-icon"
-          src={safeMinIcon}
-          alt="min temp"
-          width="18"
-          height="18"
-          on:error={() => (safeMinIcon = '/weather-icons/min-temp.svg')}
-        />
-        {safeMinC}°C</span
-      >
-      <div class="temp-separator"></div>
-      <span class="temp-row"
-        ><img
-          class="temp-icon"
-          src={safeMinIcon}
-          alt="min temp"
-          width="18"
-          height="18"
-          on:error={() => (safeMinIcon = '/weather-icons/min-temp.svg')}
-        />
-        {minF}°F</span
-      >
-    </span>
-    <span class="max-temp temp-block">
-      <span class="temp-row"
-        ><img
-          class="temp-icon"
-          src={safeMaxIcon}
-          alt="max temp"
-          width="18"
-          height="18"
-          on:error={() => (safeMaxIcon = '/weather-icons/clear-day.svg')}
-        />
-        {safeMaxC}°C</span
-      >
-      <div class="temp-separator"></div>
-      <span class="temp-row"
-        ><img
-          class="temp-icon"
-          src={safeMaxIcon}
-          alt="max temp"
-          width="18"
-          height="18"
-          on:error={() => (safeMaxIcon = '/weather-icons/clear-day.svg')}
-        />
-        {maxF}°F</span
-      >
-    </span>
-  </div>
-  {#if sunrise && sunset}
-    <div class="sunrise-sunset-panel">
-      <span class="sunrise-block">
-        <img class="icon-img" src="/weather-icons/sunrise.svg" alt="sunrise" width="18" height="18" style="filter: drop-shadow(0 0 2px #FFD600);" />
-        <span class="sunrise-time">{sunrise.slice(11, 16)}</span>
+  <div class="weather-columns">
+    <div class="weather-col">
+      <span class="min-temp temp-block">
+        <span class="temp-row">
+          <img class="temp-icon" src={safeMinIcon} alt="min temp" width="18" height="18" on:error={() => (safeMinIcon = '/weather-icons/min-temp.svg')} />
+          {safeMinC}°C
+        </span>
+        <div class="temp-separator"></div>
+        <span class="temp-row">
+          <img class="temp-icon" src={safeMinIcon} alt="min temp" width="18" height="18" on:error={() => (safeMinIcon = '/weather-icons/min-temp.svg')} />
+          {minF}°F
+        </span>
       </span>
-      <span class="sunset-block">
-        <img class="icon-img" src="/weather-icons/sunset.svg" alt="sunset" width="18" height="18" style="filter: drop-shadow(0 0 2px #FF9800);" />
-        <span class="sunset-time">{sunset.slice(11, 16)}</span>
-      </span>
+      {#if sunrise}
+        <span class="temp-row">
+          <img class="temp-icon" src="/weather-icons/sunrise.svg" alt="sunrise" width="18" height="18" style="filter: drop-shadow(0 0 2px #FFD600);" />
+          <span class="sunrise-time">{sunrise.slice(11, 16)}</span>
+        </span>
+      {/if}
     </div>
-  {/if}
+    <div class="weather-col">
+      <span class="max-temp temp-block">
+        <span class="temp-row">
+          <img class="temp-icon" src={safeMaxIcon} alt="max temp" width="18" height="18" on:error={() => (safeMaxIcon = '/weather-icons/clear-day.svg')} />
+          {safeMaxC}°C
+        </span>
+        <div class="temp-separator"></div>
+        <span class="temp-row">
+          <img class="temp-icon" src={safeMaxIcon} alt="max temp" width="18" height="18" on:error={() => (safeMaxIcon = '/weather-icons/clear-day.svg')} />
+          {maxF}°F
+        </span>
+      </span>
+      {#if sunset}
+        <span class="temp-row">
+          <img class="temp-icon" src="/weather-icons/sunset.svg" alt="sunset" width="18" height="18" style="filter: drop-shadow(0 0 2px #FF9800);" />
+          <span class="sunset-time">{sunset.slice(11, 16)}</span>
+        </span>
+      {/if}
+    </div>
+  </div>
   {#if humidity !== undefined || uvIndex !== undefined}
     <div class="extra-weather-details">
       <div class="detail-row">
@@ -229,33 +205,29 @@
     vertical-align: middle;
     margin: 0 0.1em;
   }
-  .sunrise-sunset-panel {
+  .weather-columns {
     display: flex;
     flex-direction: row;
-    align-items: center;
-    gap: 0.5em;
-    font-size: 1em;
-    font-weight: 500;
-    margin: 0.5em 0 0.1em 0;
-    letter-spacing: 0.5px;
+    gap: 1.2em;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 0.2em;
   }
-  .sunrise-block, .sunset-block {
+  .weather-col {
     display: flex;
-    align-items: center;
-    gap: 5px;
-    min-width: 70px;
-    margin: 0.1em 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3em;
+    min-width: 90px;
   }
   .sunrise-time {
     color: #FFD600;
     font-weight: 600;
     font-size: 1em;
-    margin-left: 0.1em;
   }
   .sunset-time {
     color: #FF9800;
     font-weight: 600;
     font-size: 1em;
-    margin-left: 0.1em;
   }
 </style>
