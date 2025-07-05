@@ -85,7 +85,6 @@
 
       // Validate cities before fetching weather
       const validCities = countryCities.filter(city => validateCityData(city));
-      console.log('DEBUG: validCities for weather fetch:', JSON.stringify(validCities, null, 2));
       if (validCities.length === 0) {
         console.warn('No valid cities found for weather fetch');
         return;
@@ -136,7 +135,6 @@
       }
 
       const weather = await getCurrentWeather(normalizeCity($selectedCity));
-      console.log('DEBUG: getCurrentWeather result:', JSON.stringify(weather, null, 2));
       if (weather && validateWeatherData(weather)) {
         // Transform WeatherWithIcon to WeatherData structure
         const weatherData = {
@@ -305,7 +303,6 @@
 
   // Reactively load forecast when selectedCity changes
   $: if ($selectedCity) {
-    console.log('DEBUG: $selectedCity before weather fetch:', JSON.stringify($selectedCity, null, 2));
     loadSelectedCityWeather();
     loadForecast();
   }

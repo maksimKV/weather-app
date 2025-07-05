@@ -248,7 +248,6 @@ export async function fetchCountries(): Promise<Country[]> {
 // ============================================================================
 
 export async function fetchCities(): Promise<City[]> {
-  console.log('dataService.fetchCities: Starting...');
   try {
     actions.setLoading('cities', true);
     actions.setError('cities', null);
@@ -256,7 +255,6 @@ export async function fetchCities(): Promise<City[]> {
     // Check memoization cache first
     const memoized = citiesMemoCache.get('all_cities');
     if (memoized && memoized.length > 0) {
-      console.log('dataService.fetchCities: Using memoized cities, count:', memoized.length);
       actions.setCities(memoized);
       return memoized;
     }
@@ -266,32 +264,23 @@ export async function fetchCities(): Promise<City[]> {
     if (cachedCities) {
       const cities = JSON.parse(cachedCities);
       if (cities.length > 0) {
-        console.log('dataService.fetchCities: Using cached cities, count:', cities.length);
         citiesMemoCache.set('all_cities', cities);
         actions.setCities(cities);
         return cities;
-      } else {
-        console.log('dataService.fetchCities: Cached cities is empty, will fetch from API');
       }
     }
 
-    console.log('dataService.fetchCities: No cache found or cache is empty, fetching from API...');
-
     // Fetch cities in parallel batches
     const allCities = await fetchCitiesInParallelBatches();
-
-    console.log('dataService.fetchCities: Fetched cities from API, count:', allCities.length);
 
     // Cache in memoization and sessionStorage
     citiesMemoCache.set('all_cities', allCities);
     sessionStorage.setItem('cities', JSON.stringify(allCities));
 
     actions.setCities(allCities);
-    console.log('dataService.fetchCities: Cities loaded into store successfully');
     return allCities;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch cities';
-    console.error('dataService.fetchCities: Error:', errorMessage);
     actions.setError('cities', errorMessage);
     throw error;
   } finally {
@@ -300,7 +289,6 @@ export async function fetchCities(): Promise<City[]> {
 }
 
 async function fetchCitiesInParallelBatches(): Promise<City[]> {
-  console.log('fetchCitiesInParallelBatches: Starting...');
   let allCities: City[] = [];
   let startRow = 0;
   let batchCount = 0;
@@ -315,7 +303,6 @@ async function fetchCitiesInParallelBatches(): Promise<City[]> {
     const batchPromise = dataRequestQueue.add(`cities_batch_${batchCount}`, async () => {
       try {
         const url = `/api/cities?maxRows=${BATCH_SIZE}&startRow=${currentStartRow}`;
-        console.log(`fetchCitiesInParallelBatches: Fetching batch ${batchCount} from:`, url);
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -327,12 +314,10 @@ async function fetchCitiesInParallelBatches(): Promise<City[]> {
 
         const responseText = await response.text();
         if (!responseText || responseText.trim() === '') {
-          console.log(`fetchCitiesInParallelBatches: Empty response for batch ${batchCount}`);
           return []; // No more data
         }
 
         const batch = JSON.parse(responseText);
-        console.log(`fetchCitiesInParallelBatches: Batch ${batchCount} received ${batch.length} cities`);
 
         if (Array.isArray(batch) && batch.length > 0) {
           // Normalize city data
@@ -369,15 +354,12 @@ async function fetchCitiesInParallelBatches(): Promise<City[]> {
             })
             .filter(isCity) as City[];
 
-          console.log(`fetchCitiesInParallelBatches: Batch ${batchCount} normalized to ${normalizedBatch.length} cities`);
           return normalizedBatch;
         }
 
         return [];
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (_error) {
-        // console.error(`Error in batch ${batchCount}:`, _error);
-        console.error(`fetchCitiesInParallelBatches: Error in batch ${batchCount}:`, _error);
         return []; // Return empty array instead of failing completely
       }
     });
@@ -391,8 +373,6 @@ async function fetchCitiesInParallelBatches(): Promise<City[]> {
     }
   }
 
-  console.log(`fetchCitiesInParallelBatches: Created ${batchPromises.length} batch promises`);
-
   // Execute all batches in parallel
   const batchResults = await Promise.all(batchPromises);
 
@@ -403,11 +383,8 @@ async function fetchCitiesInParallelBatches(): Promise<City[]> {
     }
   }
 
-  console.log(`fetchCitiesInParallelBatches: Combined ${allCities.length} cities from all batches`);
-
   // Deduplicate by geonameId
   const uniqueCities = Array.from(new Map(allCities.map(c => [c.geonameId, c])).values());
-  console.log(`fetchCitiesInParallelBatches: After deduplication: ${uniqueCities.length} unique cities`);
 
   return uniqueCities;
 }

@@ -230,11 +230,9 @@ export const actions = {
   },
 
   setCities: (citiesData: City[]) => {
-    console.log('actions.setCities: Setting cities in store, count:', citiesData.length);
     cities.set(citiesData);
     loading.update(state => ({ ...state, cities: false }));
     errors.update(state => ({ ...state, cities: null }));
-    console.log('actions.setCities: Cities store updated successfully');
   },
 
   addCities: (newCities: City[]) => {

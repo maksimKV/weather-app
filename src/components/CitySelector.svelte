@@ -24,7 +24,7 @@
     console.log('CitySelector debug:', {
       $citiesLoaded,
       citiesLength: $cities.length,
-      useCache
+      useCache,
     });
   }
 
