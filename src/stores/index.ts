@@ -101,17 +101,17 @@ export const errors = writable<ErrorState>({
 function getCountrySize(country: Country): 'Large' | 'Medium' | 'Small' {
   const area = country.areaInSqKm || 0;
   const population = parseInt(country.population || '0') || 0;
-  
+
   // Large countries: either very large area or very large population
   if (area > 1000000 || population > 100000000) {
     return 'Large';
   }
-  
+
   // Medium countries: moderate area or moderate population
   if (area > 100000 || population > 10000000) {
     return 'Medium';
   }
-  
+
   // Small countries: small area and small population
   return 'Small';
 }
@@ -122,11 +122,11 @@ function getCityLimit(countrySize: 'Large' | 'Medium' | 'Small', cityCount: numb
     case 'Large':
       return Math.min(cityCount, 12); // Large countries: up to 12 cities
     case 'Medium':
-      return Math.min(cityCount, 8);  // Medium countries: up to 8 cities
+      return Math.min(cityCount, 8); // Medium countries: up to 8 cities
     case 'Small':
-      return Math.min(cityCount, 5);  // Small countries: up to 5 cities
+      return Math.min(cityCount, 5); // Small countries: up to 5 cities
     default:
-      return Math.min(cityCount, 3);  // Fallback: up to 3 cities
+      return Math.min(cityCount, 3); // Fallback: up to 3 cities
   }
 }
 
@@ -146,11 +146,11 @@ export const citiesOfSelectedCountry = derived(
       const selectedCountryCode = $selectedCountry.countryCode || $selectedCountry.code;
       return cityCountryCode === selectedCountryCode;
     });
-    
+
     // Determine country size and city limit
     const countrySize = getCountrySize($selectedCountry);
     const cityLimit = getCityLimit(countrySize, filteredCities.length);
-    
+
     // Limit the number of cities shown on the map (country size + city count approach)
     const limitedCities = filteredCities
       .sort((a, b) => {
@@ -160,7 +160,7 @@ export const citiesOfSelectedCountry = derived(
         return popB - popA;
       })
       .slice(0, cityLimit);
-    
+
     return limitedCities;
   }
 );

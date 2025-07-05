@@ -398,8 +398,23 @@ export async function fetchCitiesForCountry(countryCode: string): Promise<City[]
       return memoized;
     }
 
+    // Heuristic: fetch the largest city to estimate population
+    let maxRows = 20;
+    try {
+      const res = await fetch(`/api/cities?country=${countryCode}&maxRows=1`);
+      if (res.ok) {
+        const [largestCity] = await res.json();
+        if (largestCity && largestCity.population) {
+          maxRows = Math.max(5, Math.min(200, Math.floor(largestCity.population / 1_000_000) + 5));
+        }
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Error fetching largest city for heuristic calculation:', error);
+    }
+
     const citiesData = await dataRequestQueue.add(`cities_country_${countryCode}`, async () => {
-      const res = await fetch(`/api/cities?country=${countryCode}&maxRows=50`);
+      const res = await fetch(`/api/cities?country=${countryCode}&maxRows=${maxRows}`);
       if (!res.ok) {
         throw new Error(`Failed to fetch cities for ${countryCode}`);
       }
@@ -449,8 +464,8 @@ export async function fetchCitiesForCountry(countryCode: string): Promise<City[]
     }
 
     return [];
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_err) {
+    // eslint-disable-next-line no-console
     console.error(`Error fetching cities for ${countryCode}:`, _err);
     return [];
   }
@@ -520,8 +535,8 @@ export async function searchCities(query: string, countryCode?: string): Promise
     }
 
     return [];
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_error) {
+    // eslint-disable-next-line no-console
     console.error(`Error searching cities for "${query}":`, _error);
     return [];
   }
@@ -539,9 +554,9 @@ export function clearDataCache(): void {
   try {
     sessionStorage.removeItem('countries');
     sessionStorage.removeItem('cities');
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_error) {
-    console.warn('Failed to clear sessionStorage cache:', _error);
+    // eslint-disable-next-line no-console
+    console.error('Failed to clear sessionStorage cache:', _error);
   }
 }
 
