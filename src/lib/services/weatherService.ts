@@ -618,7 +618,9 @@ export async function prefetchWeatherForCities(cities: City[]): Promise<void> {
         try {
           const normalized = normalizeCityMemoized(city);
           await getCurrentWeather(normalized);
-        } catch {
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Error in weather prefetching:', error);
           // Silently fail for prefetching
         }
       });

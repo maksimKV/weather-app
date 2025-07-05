@@ -257,7 +257,9 @@ export function safeAccess<T>(obj: unknown, path: string[], defaultValue: T): T 
       current = (current as Record<string, unknown>)[key];
     }
     return current !== undefined ? (current as T) : defaultValue;
-  } catch {
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Error in safeAccess:', error);
     return defaultValue;
   }
 }
@@ -265,7 +267,9 @@ export function safeAccess<T>(obj: unknown, path: string[], defaultValue: T): T 
 export function safeCall<T>(fn: () => T, defaultValue: T): T {
   try {
     return fn();
-  } catch {
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Error in safeCall:', error);
     return defaultValue;
   }
 }

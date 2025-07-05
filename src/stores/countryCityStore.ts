@@ -103,7 +103,9 @@ export async function fetchAndCacheCountriesCities() {
         } else {
           keepFetching = false;
         }
-      } catch {
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Error fetching cities batch:', error);
         // Continue with the cities we've already fetched instead of failing completely
         keepFetching = false;
       }
@@ -162,7 +164,9 @@ export async function fetchCitiesForCountry(countryCode: string) {
         return [...currentCities, ...uniqueNewCities];
       });
     }
-  } catch {
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Error fetching additional cities for country:', error);
     // Silently handle errors for additional city fetching
   }
 }

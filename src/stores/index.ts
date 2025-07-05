@@ -213,7 +213,9 @@ function loadFromStorage<T>(key: string, defaultValue: T): T {
     }
     const stored = localStorage.getItem(key);
     return stored ? JSON.parse(stored) : defaultValue;
-  } catch {
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Error loading from storage:', error);
     return defaultValue;
   }
 }
@@ -223,7 +225,9 @@ function saveToStorage(key: string, value: unknown): void {
     if (typeof window !== 'undefined') {
       localStorage.setItem(key, JSON.stringify(value));
     }
-  } catch {
+  } catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('Error saving to storage:', error);
     // Silently handle storage errors
   }
 }
