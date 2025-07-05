@@ -3,7 +3,7 @@
   import maplibregl from 'maplibre-gl';
   import type { City } from '../lib/types';
   import { safeCall, validateCityData } from '../lib/errorBoundary';
-  import { logDevError } from '../lib/utils';
+  import { logDevError, isValidCityArray, isCity } from '../lib/utils';
   import 'maplibre-gl/dist/maplibre-gl.css';
 
   export let cities: City[] = [];
@@ -13,6 +13,25 @@
   export let weatherByCity: Record<string, { temperature: number; icon: string }> = {};
   // eslint-disable-next-line no-unused-vars
   export let onMarkerClick: (city: City) => void;
+
+  if (!isValidCityArray(cities)) {
+    logDevError('Invalid cities prop passed to MapView:', cities);
+  }
+  if (!Array.isArray(center) || center.length !== 2 || typeof center[0] !== 'number' || typeof center[1] !== 'number') {
+    logDevError('Invalid center prop passed to MapView:', center);
+  }
+  if (typeof zoom !== 'number') {
+    logDevError('Invalid zoom prop passed to MapView:', zoom);
+  }
+  if (selectedCity !== null && !isCity(selectedCity)) {
+    logDevError('Invalid selectedCity prop passed to MapView:', selectedCity);
+  }
+  if (typeof weatherByCity !== 'object' || weatherByCity === null) {
+    logDevError('Invalid weatherByCity prop passed to MapView:', weatherByCity);
+  }
+  if (typeof onMarkerClick !== 'function') {
+    logDevError('Invalid onMarkerClick prop passed to MapView:', onMarkerClick);
+  }
 
   let mapContainer: HTMLDivElement;
   let map: maplibregl.Map | null = null;

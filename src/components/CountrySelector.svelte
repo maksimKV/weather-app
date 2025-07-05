@@ -2,8 +2,14 @@
   import { createEventDispatcher, onMount } from 'svelte';
   import { countries, countriesLoaded } from '../stores';
   import type { Country } from '../lib/types';
+  import { logDevError } from '../lib/utils';
 
   export let selected: Country | null = null;
+
+  // Runtime validation
+  if (selected !== null && (typeof selected !== 'object' || typeof selected.countryCode !== 'string' || typeof selected.countryName !== 'string')) {
+    logDevError('Invalid selected prop passed to CountrySelector:', selected);
+  }
 
   let search = '';
   let filtered: Country[] = [];

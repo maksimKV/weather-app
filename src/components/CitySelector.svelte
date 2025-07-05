@@ -2,7 +2,7 @@
   import { createEventDispatcher, onMount } from 'svelte';
   import { cities, citiesLoaded } from '../stores';
   import type { City } from '../lib/types';
-  import { logDevError } from '../lib/utils';
+  import { logDevError, isCity } from '../lib/utils';
 
   export let selected: City | null = null;
   export let clearTrigger: number = 0;
@@ -19,6 +19,17 @@
   let lastSearch = '';
 
   $: useCache = $citiesLoaded && $cities.length > 1000;
+
+  // Runtime validation
+  if (selected !== null && !isCity(selected)) {
+    logDevError('Invalid selected prop passed to CitySelector:', selected);
+  }
+  if (country !== null && typeof country !== 'string') {
+    logDevError('Invalid country prop passed to CitySelector:', country);
+  }
+  if (typeof clearTrigger !== 'number') {
+    logDevError('Invalid clearTrigger prop passed to CitySelector:', clearTrigger);
+  }
 
   async function searchCities(query: string): Promise<void> {
     if (!query || query.length < 2) {

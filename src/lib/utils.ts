@@ -215,19 +215,18 @@ export function logDevError(...args: unknown[]) {
   }
 }
 
-export function isValidCountryArray(data: unknown): data is { countryCode: string; countryName: string }[] {
+export function isValidCountryArray(
+  data: unknown
+): data is { countryCode: string; countryName: string }[] {
   return (
     Array.isArray(data) &&
-    data.every(
-      c =>
-        c &&
-        typeof c.countryCode === 'string' &&
-        typeof c.countryName === 'string'
-    )
+    data.every(c => c && typeof c.countryCode === 'string' && typeof c.countryName === 'string')
   );
 }
 
-export function isValidCityArray(data: unknown): data is { name: string; lat: number; lon: number; country: string }[] {
+export function isValidCityArray(
+  data: unknown
+): data is { name: string; lat: number; lon: number; country: string }[] {
   return (
     Array.isArray(data) &&
     data.every(

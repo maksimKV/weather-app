@@ -4,7 +4,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { Chart, registerables } from 'chart.js';
   import type { City, ChartContainer } from '../lib/types';
-  import { logDevError } from '../lib/utils';
+  import { logDevError, isValidCityArray } from '../lib/utils';
 
   // Register all Chart.js components
   Chart.register(...registerables);
@@ -14,6 +14,22 @@
   export let height: string = '300px';
   export let maxCities: number = 12;
   export let countryName: string = '';
+
+  if (!isValidCityArray(cities)) {
+    logDevError('Invalid cities prop passed to CountryWeatherChart:', cities);
+  }
+  if (typeof weatherData !== 'object' || weatherData === null) {
+    logDevError('Invalid weatherData prop passed to CountryWeatherChart:', weatherData);
+  }
+  if (typeof height !== 'string') {
+    logDevError('Invalid height prop passed to CountryWeatherChart:', height);
+  }
+  if (typeof maxCities !== 'number') {
+    logDevError('Invalid maxCities prop passed to CountryWeatherChart:', maxCities);
+  }
+  if (typeof countryName !== 'string') {
+    logDevError('Invalid countryName prop passed to CountryWeatherChart:', countryName);
+  }
 
   let chartContainer: ChartContainer;
   let chart: Chart | null = null;

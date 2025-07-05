@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import WeatherCard from './WeatherCard.svelte';
-  import { getDaysToShow, createResizeHandler, formatDate, normalizeCity } from '../lib/utils';
+  import { getDaysToShow, createResizeHandler, formatDate, normalizeCity, isValidWeatherData, logDevError } from '../lib/utils';
   import type { WeatherData, City } from '../lib/types';
 
   export let forecast: WeatherData | null = null;
@@ -10,6 +10,25 @@
   export let lat: number | null | undefined;
   export let lon: number | null | undefined;
   export let countryCode: string | undefined;
+
+  if (forecast !== null && !isValidWeatherData(forecast)) {
+    logDevError('Invalid forecast prop passed to LocationForecastCard:', forecast);
+  }
+  if (typeof location !== 'string') {
+    logDevError('Invalid location prop passed to LocationForecastCard:', location);
+  }
+  if (typeof country !== 'string') {
+    logDevError('Invalid country prop passed to LocationForecastCard:', country);
+  }
+  if (lat !== null && lat !== undefined && typeof lat !== 'number') {
+    logDevError('Invalid lat prop passed to LocationForecastCard:', lat);
+  }
+  if (lon !== null && lon !== undefined && typeof lon !== 'number') {
+    logDevError('Invalid lon prop passed to LocationForecastCard:', lon);
+  }
+  if (countryCode !== undefined && typeof countryCode !== 'string') {
+    logDevError('Invalid countryCode prop passed to LocationForecastCard:', countryCode);
+  }
 
   let daysToShow = 10;
   let resizeHandler: (() => void) | null = null;

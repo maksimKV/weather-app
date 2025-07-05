@@ -5,6 +5,7 @@
     getComfortLevelColor,
     getHumidityLabel,
     celsiusToFahrenheit,
+    logDevError,
   } from '../lib/utils';
 
   export let date: string;
@@ -22,6 +23,22 @@
   export let sunrise: string | undefined;
   export let sunset: string | undefined;
   export let uvIndex: number | undefined;
+
+  if (typeof date !== 'string') logDevError('Invalid date prop passed to WeatherCard:', date);
+  if (typeof mainIcon !== 'string') logDevError('Invalid mainIcon prop passed to WeatherCard:', mainIcon);
+  if (typeof minC !== 'number') logDevError('Invalid minC prop passed to WeatherCard:', minC);
+  if (typeof maxC !== 'number') logDevError('Invalid maxC prop passed to WeatherCard:', maxC);
+  if (typeof minIcon !== 'string') logDevError('Invalid minIcon prop passed to WeatherCard:', minIcon);
+  if (typeof maxIcon !== 'string') logDevError('Invalid maxIcon prop passed to WeatherCard:', maxIcon);
+  if (typeof mainIconSize !== 'number') logDevError('Invalid mainIconSize prop passed to WeatherCard:', mainIconSize);
+  if (typeof textSize !== 'string') logDevError('Invalid textSize prop passed to WeatherCard:', textSize);
+  if (typeof minWidth !== 'string') logDevError('Invalid minWidth prop passed to WeatherCard:', minWidth);
+  if (typeof cardBg !== 'string') logDevError('Invalid cardBg prop passed to WeatherCard:', cardBg);
+  if (typeof cardMargin !== 'string') logDevError('Invalid cardMargin prop passed to WeatherCard:', cardMargin);
+  if (humidity !== undefined && typeof humidity !== 'number') logDevError('Invalid humidity prop passed to WeatherCard:', humidity);
+  if (sunrise !== undefined && typeof sunrise !== 'string') logDevError('Invalid sunrise prop passed to WeatherCard:', sunrise);
+  if (sunset !== undefined && typeof sunset !== 'string') logDevError('Invalid sunset prop passed to WeatherCard:', sunset);
+  if (uvIndex !== undefined && typeof uvIndex !== 'number') logDevError('Invalid uvIndex prop passed to WeatherCard:', uvIndex);
 
   // Validate and sanitize inputs
   $: safeMinC = safeCall(() => Number(minC) || 0, 0);
