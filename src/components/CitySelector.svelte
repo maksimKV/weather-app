@@ -19,15 +19,6 @@
 
   $: useCache = $citiesLoaded && $cities.length > 1000;
 
-  $: {
-    // Debug log for troubleshooting
-    console.log('CitySelector debug:', {
-      $citiesLoaded,
-      citiesLength: $cities.length,
-      useCache,
-    });
-  }
-
   async function searchCities(query: string): Promise<void> {
     if (!query || query.length < 2) {
       filtered = [];

@@ -1,6 +1,17 @@
 import { json } from '@sveltejs/kit';
 import type { RequestEvent } from '@sveltejs/kit';
 
+interface GeoNamesCity {
+  name: string;
+  lat: string | number;
+  lng: string | number;
+  countryCode?: string;
+  countryName?: string;
+  population?: number;
+  geonameId?: number;
+  [key: string]: unknown;
+}
+
 export async function GET({ url }: RequestEvent) {
   const username = import.meta.env.VITE_GEONAMES_USERNAME;
 
@@ -67,19 +78,20 @@ export async function GET({ url }: RequestEvent) {
 
     // Filter out invalid cities and convert lat/lng to numbers
     const step1 = data.geonames.filter(
-      (city: any) => city && city.name && city.lat && city.lng && typeof city.name === 'string'
+      (city: GeoNamesCity) =>
+        city && city.name && city.lat && city.lng && typeof city.name === 'string'
     );
 
-    const step2 = step1.map((city: any) => ({
+    const step2 = step1.map((city: GeoNamesCity) => ({
       ...city,
-      lat: parseFloat(city.lat),
-      lng: parseFloat(city.lng),
+      lat: parseFloat(city.lat as string),
+      lng: parseFloat(city.lng as string),
     }));
 
     const validCities = step2.filter(
-      (city: any) =>
-        !isNaN(city.lat) &&
-        !isNaN(city.lng) &&
+      (city: GeoNamesCity) =>
+        !isNaN(city.lat as number) &&
+        !isNaN(city.lng as number) &&
         typeof city.lat === 'number' &&
         typeof city.lng === 'number'
     );
