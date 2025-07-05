@@ -31,15 +31,12 @@
     getForecast,
     getLocationForecast,
     getWeatherForCities,
-    clearWeatherCache,
     prefetchWeatherForCities,
-    getCacheStats,
   } from '../lib/services/weatherService';
   import {
     initializeData,
     fetchCitiesForCountry,
     normalizeCity,
-    getDataCacheStats,
   } from '../lib/services/dataService';
   import { fly, fade } from 'svelte/transition';
   import { onMount, tick } from 'svelte';
@@ -334,29 +331,7 @@
     }
   }
 
-  function clearCache(): void {
-    clearWeatherCache();
-  }
 
-  // Performance monitoring
-  function logPerformanceStats(): void {
-    const weatherStats = getCacheStats();
-    const dataStats = getDataCacheStats();
-
-    console.log('=== Performance Stats ===');
-    console.log('Weather Cache:', {
-      size: weatherStats.size,
-      entries: weatherStats.entries,
-      memoization: weatherStats.memoizationStats,
-      requests: weatherStats.requestStats,
-    });
-    console.log('Data Cache:', {
-      countries: dataStats.countries,
-      cities: dataStats.cities,
-      search: dataStats.search,
-      requests: dataStats.requestStats,
-    });
-  }
 
   function isSelectedCitySameAsGeolocated() {
     if (!$selectedCity || !$geolocatedCity) {
@@ -372,10 +347,6 @@
   <PerformanceMonitor />
   <ErrorBoundary>
     <h1 in:fly={{ y: -40, duration: 400 }}>Weather App</h1>
-    <div style="display: flex; gap: 1em; justify-content: center; margin: 1em 0;">
-      <button on:click={clearCache}>Clear Cache</button>
-      <button on:click={logPerformanceStats}>Performance Stats</button>
-    </div>
 
     <div class="selectors" in:fade>
       <ErrorBoundary>
