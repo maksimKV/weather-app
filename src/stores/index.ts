@@ -14,6 +14,7 @@ export interface Country {
   countryCode: string;
   countryName: string;
   population?: string;
+  areaInSqKm?: number;
   code?: string; // Alternative field name from API
 }
 
@@ -24,6 +25,7 @@ export interface City {
   country: string;
   countryCode?: string;
   geonameId?: number;
+  population?: number;
 }
 
 export interface WeatherCacheEntry {
@@ -92,6 +94,43 @@ export const errors = writable<ErrorState>({
 });
 
 // ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+// Determine country size based on area and population
+function getCountrySize(country: Country): 'Large' | 'Medium' | 'Small' {
+  const area = country.areaInSqKm || 0;
+  const population = parseInt(country.population || '0') || 0;
+  
+  // Large countries: either very large area or very large population
+  if (area > 1000000 || population > 100000000) {
+    return 'Large';
+  }
+  
+  // Medium countries: moderate area or moderate population
+  if (area > 100000 || population > 10000000) {
+    return 'Medium';
+  }
+  
+  // Small countries: small area and small population
+  return 'Small';
+}
+
+// Get city limit based on country size and available cities
+function getCityLimit(countrySize: 'Large' | 'Medium' | 'Small', cityCount: number): number {
+  switch (countrySize) {
+    case 'Large':
+      return Math.min(cityCount, 12); // Large countries: up to 12 cities
+    case 'Medium':
+      return Math.min(cityCount, 8);  // Medium countries: up to 8 cities
+    case 'Small':
+      return Math.min(cityCount, 5);  // Small countries: up to 5 cities
+    default:
+      return Math.min(cityCount, 3);  // Fallback: up to 3 cities
+  }
+}
+
+// ============================================================================
 // DERIVED STORES
 // ============================================================================
 
@@ -102,11 +141,27 @@ export const citiesOfSelectedCountry = derived(
     if (!$selectedCountry) return [];
 
     // Filter cities by country code - handle both possible field structures
-    return $cities.filter(city => {
+    const filteredCities = $cities.filter(city => {
       const cityCountryCode = city.countryCode || city.country;
       const selectedCountryCode = $selectedCountry.countryCode || $selectedCountry.code;
       return cityCountryCode === selectedCountryCode;
     });
+    
+    // Determine country size and city limit
+    const countrySize = getCountrySize($selectedCountry);
+    const cityLimit = getCityLimit(countrySize, filteredCities.length);
+    
+    // Limit the number of cities shown on the map (country size + city count approach)
+    const limitedCities = filteredCities
+      .sort((a, b) => {
+        // Sort by population if available, otherwise by name
+        const popA = a.population || 0;
+        const popB = b.population || 0;
+        return popB - popA;
+      })
+      .slice(0, cityLimit);
+    
+    return limitedCities;
   }
 );
 

@@ -4,6 +4,7 @@ interface GeoNamesCountry {
   countryCode: string;
   countryName: string;
   population?: number;
+  areaInSqKm?: number;
   geonameId?: number;
   continent?: string;
   capital?: string;

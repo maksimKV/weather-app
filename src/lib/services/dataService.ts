@@ -451,7 +451,7 @@ export async function fetchCitiesForCountry(countryCode: string): Promise<City[]
     return [];
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_err) {
-    // console.error(`Error fetching cities for ${countryCode}:`, _err);
+    console.error(`Error fetching cities for ${countryCode}:`, _err);
     return [];
   }
 }
@@ -522,7 +522,7 @@ export async function searchCities(query: string, countryCode?: string): Promise
     return [];
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_error) {
-    // console.error(`Error searching cities for "${query}":`, _error);
+    console.error(`Error searching cities for "${query}":`, _error);
     return [];
   }
 }
@@ -541,7 +541,7 @@ export function clearDataCache(): void {
     sessionStorage.removeItem('cities');
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_error) {
-    // console.warn('Failed to clear sessionStorage cache:', _error);
+    console.warn('Failed to clear sessionStorage cache:', _error);
   }
 }
 
