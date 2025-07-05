@@ -331,8 +331,6 @@
     }
   }
 
-
-
   function isSelectedCitySameAsGeolocated() {
     if (!$selectedCity || !$geolocatedCity) {
       return false;
@@ -343,10 +341,20 @@
   }
 </script>
 
+<svelte:head>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;400&display=swap" rel="stylesheet" />
+</svelte:head>
+
 <main>
   <PerformanceMonitor />
   <ErrorBoundary>
-    <h1 in:fly={{ y: -40, duration: 400 }}>Weather App</h1>
+    <div class="weather-title-wrapper">
+      <span class="weather-icon-spin">
+        <img src="/weather-icons/clear-day.svg" alt="Weather Icon" height="48" width="48" />
+      </span>
+      <h1 in:fly={{ y: -40, duration: 400 }}>Weather App</h1>
+    </div>
+    <p class="subtitle">Your daily weather, at a glance!</p>
 
     <div class="selectors" in:fade>
       <ErrorBoundary>
@@ -470,15 +478,54 @@
 </main>
 
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;400&display=swap');
+
   main {
     max-width: 900px;
     margin: 0 auto;
     padding: 1em;
   }
+  .weather-title-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7em;
+    margin-top: 0.5em;
+    margin-bottom: 0.2em;
+  }
+  .weather-icon-spin {
+    display: flex;
+    align-items: center;
+    animation: spin 4s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
   h1 {
+    font-family: 'Montserrat', system-ui, sans-serif;
+    font-size: 2.7em;
+    font-weight: 700;
     text-align: center;
-    color: var(--primary);
-    margin-bottom: 0.5em;
+    background: linear-gradient(90deg, #2a7de1, #007bff, #00c6fb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 2px 2px 8px rgba(42,125,225,0.15);
+    margin-bottom: 0.1em;
+    margin-top: 0;
+    letter-spacing: 1px;
+  }
+  .subtitle {
+    font-family: 'Montserrat', system-ui, sans-serif;
+    text-align: center;
+    color: #555;
+    font-size: 1.15em;
+    margin-top: -0.5em;
+    margin-bottom: 1em;
+    letter-spacing: 0.5px;
+    font-weight: 400;
   }
   .selectors {
     display: flex;
