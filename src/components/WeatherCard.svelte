@@ -38,15 +38,6 @@
   $: minF = safeCall(() => ((safeMinC * 9) / 5 + 32).toFixed(1), '0.0');
   $: maxF = safeCall(() => ((safeMaxC * 9) / 5 + 32).toFixed(1), '0.0');
 
-  // Helper for UV color
-  function uvColor(val: number | undefined): string {
-    if (val === undefined) return '#bbb';
-    if (val < 3) return '#4caf50'; // green
-    if (val < 6) return '#ffeb3b'; // yellow
-    if (val < 8) return '#ff9800'; // orange
-    return '#f44336'; // red
-  }
-
   // Helper for UV label
   function uvLabel(val: number | undefined): string {
     if (val === undefined) return '';
@@ -57,7 +48,7 @@
   }
 
   // Helper for humidity color
-  function humidityColor(val: number | undefined): string {
+  function comfortLevelColor(val: number | undefined): string {
     if (val === undefined) return '#bbb';
     if (val < 31) return '#2196f3'; // blue (dry)
     if (val < 61) return '#4caf50'; // green (comfortable)
@@ -180,10 +171,10 @@
               width="18"
               height="18"
             />
-            <span style="color: {humidityColor(humidity)}; font-weight: bold; font-size: 14px;">
+            <span style="color: {comfortLevelColor(humidity)}; font-weight: bold; font-size: 14px;">
               RH:
             </span>
-            <span style="color: {humidityColor(humidity)}; font-size: 14px;">
+            <span style="color: {comfortLevelColor(humidity)}; font-size: 14px;">
               {humidity}% ({humidityLabel(humidity)})
             </span>
           </span>
@@ -202,7 +193,10 @@
               width="18"
               height="18"
             />
-            <span style="color: {humidityColor(uvIndex)}; font-weight: bold; font-size: 14px;" title={uvIndex >= 6 ? 'Wear sunscreen and limit sun exposure!' : ''}>
+            <span
+              style="color: {comfortLevelColor(uvIndex)}; font-weight: bold; font-size: 14px;"
+              title={uvIndex >= 6 ? 'Wear sunscreen and limit sun exposure!' : ''}
+            >
               UV: {uvIndex} ({uvLabel(uvIndex)})
             </span>
           </span>
