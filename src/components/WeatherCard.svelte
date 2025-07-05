@@ -6,7 +6,6 @@
     getHumidityLabel,
     celsiusToFahrenheit,
   } from '../lib/utils';
-  import type { WeatherCardProps } from '../lib/types';
 
   export let date: string;
   export let mainIcon: string;

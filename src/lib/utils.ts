@@ -84,6 +84,7 @@ export function createResizeHandler(callback: () => void): () => void {
     try {
       callback();
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('Error in resize handler:', error);
     }
   };

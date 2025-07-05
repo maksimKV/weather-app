@@ -209,4 +209,4 @@ export interface ErrorInfo {
 // CHART TYPES
 // ============================================================================
 
-export type ChartContainer = HTMLCanvasElement;
+export type ChartContainer = unknown;
