@@ -430,36 +430,6 @@
   </ErrorBoundary>
 
   <ErrorBoundary>
-    {#if loadingLocationForecast}
-      <div class="loading-message">
-        <div class="loading-spinner"></div>
-        <p>Loading your location weather...</p>
-      </div>
-    {:else if locationForecast && validateWeatherData(locationForecast)}
-      <LocationForecastCard
-        forecast={locationForecast}
-        location={locationName}
-        country={locationCountry}
-        lat={$locationData.latitude}
-        lon={$locationData.longitude}
-        countryCode={$locationData.country_code}
-        on:select={e => {
-          actions.setSelectedCity(e.detail);
-          cityManuallySelected = true;
-        }}
-      />
-    {:else if locationError}
-      <div class="error-message" in:fade>
-        <p>⚠️ {locationError}</p>
-        <p class="error-help">
-          💡 Unable to determine your location automatically. You can still select cities and
-          countries manually to get weather information.
-        </p>
-      </div>
-    {/if}
-  </ErrorBoundary>
-
-  <ErrorBoundary>
     {#if !$isSelectedCityGeolocated}
       <div class="forecast-section" in:fade>
         {#if $selectedCity && cityManuallySelected}
@@ -493,6 +463,36 @@
             />
           </ErrorBoundary>
         {/if}
+      </div>
+    {/if}
+  </ErrorBoundary>
+
+  <ErrorBoundary>
+    {#if loadingLocationForecast}
+      <div class="loading-message">
+        <div class="loading-spinner"></div>
+        <p>Loading your location weather...</p>
+      </div>
+    {:else if locationForecast && validateWeatherData(locationForecast)}
+      <LocationForecastCard
+        forecast={locationForecast}
+        location={locationName}
+        country={locationCountry}
+        lat={$locationData.latitude}
+        lon={$locationData.longitude}
+        countryCode={$locationData.country_code}
+        on:select={e => {
+          actions.setSelectedCity(e.detail);
+          cityManuallySelected = true;
+        }}
+      />
+    {:else if locationError}
+      <div class="error-message" in:fade>
+        <p>⚠️ {locationError}</p>
+        <p class="error-help">
+          💡 Unable to determine your location automatically. You can still select cities and
+          countries manually to get weather information.
+        </p>
       </div>
     {/if}
   </ErrorBoundary>
