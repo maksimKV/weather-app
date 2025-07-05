@@ -22,9 +22,6 @@ export interface Forecast {
     weathercode: number[];
     relative_humidity_2m_max?: number[];
     relative_humidity_2m_min?: number[];
-    precipitation_sum?: number[];
-    windspeed_10m_max?: number[];
-    winddirection_10m_dominant?: number[];
     sunrise?: string[];
     sunset?: string[];
     uv_index_max?: number[];

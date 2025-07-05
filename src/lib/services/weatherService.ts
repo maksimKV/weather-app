@@ -293,9 +293,6 @@ function addForecastIcons(forecast: Forecast): ForecastWithIcons {
       weathercode: forecast.daily.weathercode,
       relative_humidity_2m_max: forecast.daily.relative_humidity_2m_max,
       relative_humidity_2m_min: forecast.daily.relative_humidity_2m_min,
-      precipitation_sum: forecast.daily.precipitation_sum,
-      windspeed_10m_max: forecast.daily.windspeed_10m_max,
-      winddirection_10m_dominant: forecast.daily.winddirection_10m_dominant,
       sunrise: forecast.daily.sunrise,
       sunset: forecast.daily.sunset,
       uv_index_max: forecast.daily.uv_index_max,
@@ -354,14 +351,14 @@ async function fetchForecastRaw(lat: number, lon: number): Promise<Forecast | nu
   const params = {
     latitude: lat,
     longitude: lon,
-    daily: 'temperature_2m_max,temperature_2m_min,weathercode,relative_humidity_2m_max,relative_humidity_2m_min,precipitation_sum,windspeed_10m_max,winddirection_10m_dominant,sunrise,sunset,uv_index_max',
+    daily: 'temperature_2m_max,temperature_2m_min,weathercode,relative_humidity_2m_max,relative_humidity_2m_min,sunrise,sunset,uv_index_max',
     forecast_days: 16,
     timezone: 'auto',
   };
   const key = createRequestKey(BASE_URL, params);
 
   return requestQueue.add(key, async () => {
-    const url = `${BASE_URL}?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,weathercode,relative_humidity_2m_max,relative_humidity_2m_min,precipitation_sum,windspeed_10m_max,winddirection_10m_dominant,sunrise,sunset,uv_index_max&forecast_days=16&timezone=auto`;
+    const url = `${BASE_URL}?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,weathercode,relative_humidity_2m_max,relative_humidity_2m_min,sunrise,sunset,uv_index_max&forecast_days=16&timezone=auto`;
     return makeRequest<Forecast>(url);
   });
 }

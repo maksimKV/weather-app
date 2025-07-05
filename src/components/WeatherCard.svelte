@@ -13,9 +13,6 @@
   export let cardBg: string = 'var(--secondary)';
   export let cardMargin: string = '0 0.3em';
   export let humidity: number | undefined;
-  export let windspeed: number | undefined;
-  export let winddirection: number | undefined;
-  export let precipitation: number | undefined;
   export let sunrise: string | undefined;
   export let sunset: string | undefined;
   export let uvIndex: number | undefined;
@@ -40,13 +37,6 @@
   // Calculate Fahrenheit safely
   $: minF = safeCall(() => ((safeMinC * 9) / 5 + 32).toFixed(1), '0.0');
   $: maxF = safeCall(() => ((safeMaxC * 9) / 5 + 32).toFixed(1), '0.0');
-
-  // Helper for wind direction
-  function windDirText(deg: number | undefined): string {
-    if (deg === undefined) return '';
-    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-    return dirs[Math.round(((deg % 360) / 45)) % 8];
-  }
 
   // Helper for UV color
   function uvColor(val: number | undefined): string {
@@ -144,20 +134,15 @@
       </span>
     </div>
   {/if}
-  {#if humidity !== undefined || windspeed !== undefined || precipitation !== undefined || uvIndex !== undefined}
+  {#if humidity !== undefined || uvIndex !== undefined}
     <div class="extra-weather-details">
       <div class="detail-row">
         {#if humidity !== undefined}
           <span class="detail-item"><span class="icon">💧</span> {humidity}%</span>
         {/if}
-        {#if windspeed !== undefined}
-          <span class="detail-item"><span class="icon">🌀</span> {windspeed} km/h {windDirText(winddirection)}</span>
-        {/if}
       </div>
       <div class="detail-row">
-        {#if precipitation !== undefined}
-          <span class="detail-item"><span class="icon">☔</span> {precipitation} mm</span>
-        {/if}
+        <!-- Precipitation removed -->
       </div>
       <div class="detail-row">
         {#if uvIndex !== undefined}
