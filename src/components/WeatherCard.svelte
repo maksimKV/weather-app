@@ -138,6 +138,13 @@
     align-items: center;
     box-sizing: border-box;
   }
+
+  @media (min-width: 1024px) {
+    .day {
+      padding: 0.5em;
+    }
+  }
+
   .big-weather-icon {
     margin-bottom: 0.5em;
   }
@@ -209,10 +216,16 @@
     display: flex;
     flex-direction: row;
     gap: 0.5em;
-    width: 100%;
     justify-content: center;
     margin-bottom: 0.2em;
   }
+
+  @media (min-width: 1024px) {
+    .weather-columns {
+      gap: 0;
+    }
+  }
+
   .weather-col {
     display: flex;
     flex-direction: column;
