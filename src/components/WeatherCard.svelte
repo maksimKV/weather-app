@@ -138,7 +138,7 @@
     <div class="extra-weather-details">
       <div class="detail-row">
         {#if humidity !== undefined}
-          <span class="detail-item"><span class="icon">💧</span> {humidity}%</span>
+          <span class="detail-item"><img class="icon-img" src="/weather-icons/humidity.svg" alt="humidity" width="18" height="18" /> {humidity}%</span>
         {/if}
       </div>
       <div class="detail-row">
@@ -146,7 +146,7 @@
       </div>
       <div class="detail-row">
         {#if uvIndex !== undefined}
-          <span class="detail-item"><span class="icon" style="color: {uvColor(uvIndex)};">●</span> UV: {uvIndex} ({uvLabel(uvIndex)})</span>
+          <span class="detail-item"><img class="icon-img" src="/weather-icons/uv.svg" alt="uv index" width="18" height="18" /> <span style="color: {uvColor(uvIndex)};">UV: {uvIndex} ({uvLabel(uvIndex)})</span></span>
         {/if}
       </div>
     </div>
