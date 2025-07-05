@@ -1,42 +1,52 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  export let forecast: any = null;
+  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
+  import WeatherCard from './WeatherCard.svelte';
+  import { getDaysToShow, createResizeHandler, formatDate, normalizeCity } from '../lib/utils';
+  import type { WeatherData, City } from '../lib/types';
+
+  export let forecast: WeatherData | null = null;
   export let location: string = '';
   export let country: string = '';
-  export let lat: number | undefined;
-  export let lon: number | undefined;
+  export let lat: number | null | undefined;
+  export let lon: number | null | undefined;
   export let countryCode: string | undefined;
 
   let daysToShow = 10;
+  let resizeHandler: (() => void) | null = null;
 
-  const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher<{
+    select: City;
+  }>();
 
   function updateDaysToShow() {
-    if (window.innerWidth < 500) daysToShow = 4;
-    else if (window.innerWidth < 900) daysToShow = 6;
-    else daysToShow = 8;
+    daysToShow = getDaysToShow();
   }
 
-  if (typeof window !== 'undefined') {
+  onMount(() => {
     updateDaysToShow();
-    window.addEventListener('resize', updateDaysToShow);
-  }
+    resizeHandler = createResizeHandler(updateDaysToShow);
+    window.addEventListener('resize', resizeHandler);
+  });
 
-  import WeatherCard from './WeatherCard.svelte';
+  onDestroy(() => {
+    if (resizeHandler && typeof window !== 'undefined') {
+      window.removeEventListener('resize', resizeHandler);
+    }
+  });
 
   function handleLocationClick() {
     if (lat == null || lon == null) {
       return;
     }
-    const cityObj = {
+
+    const cityObj = normalizeCity({
       name: location,
       lat,
       lon,
       country: country || 'Unknown',
       countryCode: countryCode || '',
-      geonameId: undefined,
-      population: undefined,
-    };
+    });
+
     dispatch('select', cityObj);
   }
 </script>
@@ -67,16 +77,13 @@
       </button>
     </div>
     <div class="forecast-panel">
-      {#each forecast.daily.time.slice(0, daysToShow) as date, i}
+      {#each forecast.daily?.time?.slice(0, daysToShow) || [] as date, i}
         <WeatherCard
-          date={new Date(date).toLocaleDateString(undefined, {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-          })}
-          mainIcon={forecast.icons[forecast.daily.weathercode[i]] || forecast.icons[0]}
-          minC={forecast.daily.temperature_2m_min[i]}
-          maxC={forecast.daily.temperature_2m_max[i]}
+          date={formatDate(date)}
+          mainIcon={forecast.icons?.[forecast.daily?.weathercode?.[i] || 0] ||
+            '/weather-icons/unknown.svg'}
+          minC={forecast.daily?.temperature_2m_min?.[i] || 0}
+          maxC={forecast.daily?.temperature_2m_max?.[i] || 0}
           minIcon="/weather-icons/min-temp.svg"
           maxIcon="/weather-icons/clear-day.svg"
           mainIconSize={56}
@@ -84,12 +91,10 @@
           minWidth="80px"
           cardBg="var(--secondary)"
           cardMargin="0 0.3em"
-          humidity={forecast.daily.relative_humidity_2m_max
-            ? forecast.daily.relative_humidity_2m_max[i]
-            : undefined}
-          sunrise={forecast.daily.sunrise ? forecast.daily.sunrise[i] : undefined}
-          sunset={forecast.daily.sunset ? forecast.daily.sunset[i] : undefined}
-          uvIndex={forecast.daily.uv_index_max ? forecast.daily.uv_index_max[i] : undefined}
+          humidity={forecast.daily?.relative_humidity_2m_max?.[i]}
+          sunrise={forecast.daily?.sunrise?.[i]}
+          sunset={forecast.daily?.sunset?.[i]}
+          uvIndex={forecast.daily?.uv_index_max?.[i]}
         />
       {/each}
     </div>

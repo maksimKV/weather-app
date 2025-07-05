@@ -2,29 +2,22 @@
   import { onMount, onDestroy } from 'svelte';
   import WeatherCard from './WeatherCard.svelte';
   import { safeAccess, safeCall, validateWeatherData } from '../lib/errorBoundary';
+  import { getDaysToShow, createResizeHandler, formatDate } from '../lib/utils';
+  import type { WeatherData } from '../lib/types';
 
-  export let forecast: any = null;
+  export let forecast: WeatherData | null = null;
 
   let daysToShow = 12;
   let resizeHandler: (() => void) | null = null;
 
   function updateDaysToShow() {
-    try {
-      if (typeof window !== 'undefined') {
-        if (window.innerWidth < 500) daysToShow = 4;
-        else if (window.innerWidth < 900) daysToShow = 6;
-        else daysToShow = 8;
-      }
-    } catch (error) {
-      console.error('Error updating days to show:', error);
-      daysToShow = 8; // fallback
-    }
+    daysToShow = getDaysToShow();
   }
 
   onMount(() => {
     try {
       updateDaysToShow();
-      resizeHandler = updateDaysToShow;
+      resizeHandler = createResizeHandler(updateDaysToShow);
       window.addEventListener('resize', resizeHandler);
     } catch (error) {
       console.error('Error setting up ForecastPanel:', error);
@@ -59,15 +52,7 @@
     {#each dailyTime.slice(0, daysToShow) as date, i}
       {#if i < dailyMin.length && i < dailyMax.length && i < dailyWeathercode.length}
         <WeatherCard
-          date={safeCall(
-            () =>
-              new Date(date).toLocaleDateString(undefined, {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-              }),
-            'Unknown'
-          )}
+          date={safeCall(() => formatDate(date), 'Unknown')}
           mainIcon={safeAccess(icons, [dailyWeathercode[i]], '/weather-icons/unknown.svg') ||
             '/weather-icons/unknown.svg'}
           minC={dailyMin[i]}

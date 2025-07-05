@@ -2,9 +2,20 @@
   import { onMount, onDestroy } from 'svelte';
   import { getCacheStats } from '../lib/services/weatherService';
   import { getDataCacheStats } from '../lib/services/dataService';
+  import type { CacheStats, DataCacheStats } from '../lib/types';
 
-  let weatherStats: any = {};
-  let dataStats: any = {};
+  let weatherStats: CacheStats = {
+    size: 0,
+    entries: 0,
+    memoizationStats: {},
+    requestStats: { queueLength: 0, running: 0, cachedRequests: 0 },
+  };
+  let dataStats: DataCacheStats = {
+    countries: 0,
+    cities: 0,
+    search: 0,
+    requestStats: { queueLength: 0, running: 0, cachedRequests: 0 },
+  };
   let isVisible = false;
   let updateInterval: number;
 

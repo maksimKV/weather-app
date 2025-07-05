@@ -387,7 +387,7 @@
         zoom={mapZoom}
         selectedCity={$selectedCity}
         weatherByCity={cityWeather}
-        onMarkerClick={(city: any) => {
+        onMarkerClick={(city: City) => {
           try {
             if (validateCityData(city)) {
               actions.setSelectedCity(city);

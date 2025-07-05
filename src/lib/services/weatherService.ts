@@ -1,5 +1,6 @@
 import { actions, selectors } from '../../stores';
 import type { City } from '../../stores';
+import { normalizeCity as normalizeCityUtil } from '../utils';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -17,6 +18,11 @@ export interface Forecast {
     temperature_2m_max: number[];
     temperature_2m_min: number[];
     weathercode: number[];
+    relative_humidity_2m_max?: number[];
+    relative_humidity_2m_min?: number[];
+    sunrise?: string[];
+    sunset?: string[];
+    uv_index_max?: number[];
   };
 }
 
@@ -256,10 +262,7 @@ function createRequestKey(endpoint: string, params: Record<string, unknown>): st
 }
 
 function normalizeCity(city: City): City {
-  return {
-    ...city,
-    lon: city.lon ?? (city as { lng?: number }).lng ?? 0,
-  };
+  return normalizeCityUtil(city);
 }
 
 // Memoized city normalization
@@ -288,11 +291,11 @@ function addForecastIcons(forecast: Forecast): ForecastWithIcons {
       temperature_2m_max: forecast.daily.temperature_2m_max,
       temperature_2m_min: forecast.daily.temperature_2m_min,
       weathercode: forecast.daily.weathercode,
-      relative_humidity_2m_max: forecast.daily.relative_humidity_2m_max,
-      relative_humidity_2m_min: forecast.daily.relative_humidity_2m_min,
-      sunrise: forecast.daily.sunrise,
-      sunset: forecast.daily.sunset,
-      uv_index_max: forecast.daily.uv_index_max,
+      relative_humidity_2m_max: forecast.daily.relative_humidity_2m_max || [],
+      relative_humidity_2m_min: forecast.daily.relative_humidity_2m_min || [],
+      sunrise: forecast.daily.sunrise || [],
+      sunset: forecast.daily.sunset || [],
+      uv_index_max: forecast.daily.uv_index_max || [],
     },
     icons: WEATHER_ICONS,
   };

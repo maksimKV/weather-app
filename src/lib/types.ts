@@ -82,6 +82,10 @@ export interface WeatherCardProps {
   cardMargin?: string;
   showFahrenheit?: boolean;
   compact?: boolean;
+  humidity?: number;
+  sunrise?: string;
+  sunset?: string;
+  uvIndex?: number;
 }
 
 export interface ForecastPanelProps {
@@ -96,6 +100,14 @@ export interface LocationForecastCardProps {
   forecast: WeatherData | null;
   location: string;
   country: string;
+  lat?: number | null;
+  lon?: number | null;
+  countryCode?: string;
+}
+
+export interface PerformanceMonitorProps {
+  weatherStats: CacheStats;
+  dataStats: DataCacheStats;
 }
 
 // ============================================================================
@@ -179,3 +191,22 @@ export interface DataCacheStats {
   search: number;
   requestStats: Record<string, number>;
 }
+
+// ============================================================================
+// ERROR TYPES
+// ============================================================================
+
+export interface ErrorInfo {
+  component?: string;
+  message?: string;
+  source?: string;
+  lineno?: number;
+  colno?: number;
+  [key: string]: unknown;
+}
+
+// ============================================================================
+// CHART TYPES
+// ============================================================================
+
+export type ChartContainer = HTMLCanvasElement;

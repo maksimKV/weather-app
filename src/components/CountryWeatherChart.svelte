@@ -3,7 +3,7 @@
   import type {} from 'svelte';
   import { onMount, onDestroy } from 'svelte';
   import { Chart, registerables } from 'chart.js';
-  import type { City } from '../lib/types';
+  import type { City, ChartContainer } from '../lib/types';
 
   // Register all Chart.js components
   Chart.register(...registerables);
@@ -14,7 +14,7 @@
   export let maxCities: number = 12;
   export let countryName: string = '';
 
-  let chartContainer: any;
+  let chartContainer: ChartContainer;
   let chart: Chart | null = null;
   let chartId = `country-chart-${Math.random().toString(36).substr(2, 9)}`;
 

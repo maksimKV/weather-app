@@ -1,5 +1,12 @@
 <script lang="ts">
   import { safeCall } from '../lib/errorBoundary';
+  import {
+    getUvLabel,
+    getComfortLevelColor,
+    getHumidityLabel,
+    celsiusToFahrenheit,
+  } from '../lib/utils';
+  import type { WeatherCardProps } from '../lib/types';
 
   export let date: string;
   export let mainIcon: string;
@@ -34,36 +41,9 @@
     '/weather-icons/clear-day.svg'
   );
 
-  // Calculate Fahrenheit safely
-  $: minF = safeCall(() => ((safeMinC * 9) / 5 + 32).toFixed(1), '0.0');
-  $: maxF = safeCall(() => ((safeMaxC * 9) / 5 + 32).toFixed(1), '0.0');
-
-  // Helper for UV label
-  function uvLabel(val: number | undefined): string {
-    if (val === undefined) return '';
-    if (val < 3) return 'Low';
-    if (val < 6) return 'Moderate';
-    if (val < 8) return 'High';
-    return 'Very High';
-  }
-
-  // Helper for humidity color
-  function comfortLevelColor(val: number | undefined): string {
-    if (val === undefined) return '#bbb';
-    if (val < 31) return '#2196f3'; // blue (dry)
-    if (val < 61) return '#4caf50'; // green (comfortable)
-    if (val < 81) return '#ff9800'; // orange (humid)
-    return '#f44336'; // red (very humid)
-  }
-
-  // Helper for humidity label
-  function humidityLabel(val: number | undefined): string {
-    if (val === undefined) return '';
-    if (val < 31) return 'Low';
-    if (val < 61) return 'Moderate';
-    if (val < 81) return 'High';
-    return 'Very High';
-  }
+  // Calculate Fahrenheit safely using shared utility
+  $: minF = safeCall(() => celsiusToFahrenheit(safeMinC), '0.0');
+  $: maxF = safeCall(() => celsiusToFahrenheit(safeMaxC), '0.0');
 </script>
 
 <div
@@ -171,11 +151,13 @@
               width="18"
               height="18"
             />
-            <span style="color: {comfortLevelColor(humidity)}; font-weight: bold; font-size: 14px;">
+            <span
+              style="color: {getComfortLevelColor(humidity)}; font-weight: bold; font-size: 14px;"
+            >
               RH:
             </span>
-            <span style="color: {comfortLevelColor(humidity)}; font-size: 14px;">
-              {humidity}% ({humidityLabel(humidity)})
+            <span style="color: {getComfortLevelColor(humidity)}; font-size: 14px;">
+              {humidity}% ({getHumidityLabel(humidity)})
             </span>
           </span>
         {/if}
@@ -194,10 +176,10 @@
               height="18"
             />
             <span
-              style="color: {comfortLevelColor(uvIndex)}; font-weight: bold; font-size: 14px;"
+              style="color: {getComfortLevelColor(uvIndex)}; font-weight: bold; font-size: 14px;"
               title={uvIndex >= 6 ? 'Wear sunscreen and limit sun exposure!' : ''}
             >
-              UV: {uvIndex} ({uvLabel(uvIndex)})
+              UV: {uvIndex} ({getUvLabel(uvIndex)})
             </span>
           </span>
         {/if}

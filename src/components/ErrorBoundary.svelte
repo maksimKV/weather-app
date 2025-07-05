@@ -1,10 +1,11 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { errorStore, type ErrorBoundaryState } from '../lib/errorBoundary';
+  import type { ErrorInfo } from '../lib/types';
 
   let hasError = false;
   let error: Error | null = null;
-  let errorInfo: any = null;
+  let errorInfo: ErrorInfo | null = null;
   let componentStack = '';
 
   // Subscribe to error store
@@ -15,7 +16,7 @@
     componentStack = state.componentStack || '';
   });
 
-  function handleError(err: Error, info: any = {}) {
+  function handleError(err: Error, info: ErrorInfo = {}) {
     hasError = true;
     error = err;
     errorInfo = info;
@@ -54,7 +55,12 @@
       const originalErrorHandler = window.onerror;
       window.onerror = (message, source, lineno, colno, error) => {
         if (error) {
-          handleError(error, { message, source, lineno, colno });
+          handleError(error, {
+            message: typeof message === 'string' ? message : String(message),
+            source: typeof source === 'string' ? source : undefined,
+            lineno: typeof lineno === 'number' ? lineno : undefined,
+            colno: typeof colno === 'number' ? colno : undefined,
+          });
         }
         if (originalErrorHandler) {
           return originalErrorHandler(message, source, lineno, colno, error);

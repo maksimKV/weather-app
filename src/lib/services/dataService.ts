@@ -591,38 +591,21 @@ export async function initializeData(): Promise<void> {
 // UTILITY FUNCTIONS
 // ============================================================================
 
+import {
+  normalizeCity as normalizeCityUtil,
+  createCityKey as createCityKeyUtil,
+  isCity as isCityUtil,
+} from '../utils';
+
 export function normalizeCity(city: unknown): City {
-  if (typeof city === 'object' && city !== null && 'name' in city && 'lat' in city) {
-    const c = city as {
-      name: string;
-      lat: number;
-      lon?: number;
-      lng?: number;
-      country?: string;
-      countryCode?: string;
-    };
-    return {
-      name: c.name,
-      lat: c.lat,
-      lon: c.lon ?? c.lng ?? 0,
-      country: c.countryCode ?? c.country ?? 'Unknown',
-    };
-  }
-  throw new Error('Invalid city object');
+  return normalizeCityUtil(city);
 }
 
 export function createCityKey(city: City): string {
-  return `${city.name}|${city.lat}|${city.lon}`;
+  return createCityKeyUtil(city);
 }
 
 // Add a type guard for City
 function isCity(obj: unknown): obj is City {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    'name' in obj &&
-    'lat' in obj &&
-    typeof (obj as Record<string, unknown>).name === 'string' &&
-    typeof (obj as Record<string, unknown>).lat === 'number'
-  );
+  return isCityUtil(obj);
 }

@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { writable, type Writable } from 'svelte/store';
+import type { ErrorInfo } from './types';
 
 // ============================================================================
 // TYPES & INTERFACES
@@ -11,14 +12,14 @@ import { writable, type Writable } from 'svelte/store';
 export interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
-  errorInfo: unknown;
+  errorInfo: ErrorInfo | null;
   componentStack?: string;
   timestamp: number;
 }
 
 export interface ErrorBoundaryOptions {
-  fallback?: (error: Error, errorInfo: unknown) => unknown;
-  onError?: (error: Error, errorInfo: unknown) => void;
+  fallback?: (error: Error, errorInfo: ErrorInfo) => unknown;
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
   resetOnPropsChange?: boolean;
 }
 
@@ -88,7 +89,7 @@ export function createErrorBoundary(options: ErrorBoundaryOptions = {}) {
 
   return {
     // Error handler
-    handleError(error: Error, errorInfo: unknown = {}) {
+    handleError(error: Error, errorInfo: ErrorInfo = {}) {
       const errorState: ErrorBoundaryState = {
         hasError: true,
         error,
