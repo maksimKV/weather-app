@@ -20,10 +20,12 @@ export interface AppState {
 
 function createAppStore() {
   const stored = localStorage.getItem('appState');
-  const initial: AppState = stored ? JSON.parse(stored) : { selectedCountry: null, selectedCity: null, weather: null };
+  const initial: AppState = stored
+    ? JSON.parse(stored)
+    : { selectedCountry: null, selectedCity: null, weather: null };
   const { subscribe, set, update } = writable<AppState>(initial);
 
-  subscribe((value) => {
+  subscribe(value => {
     localStorage.setItem('appState', JSON.stringify(value));
   });
 
@@ -31,10 +33,10 @@ function createAppStore() {
     subscribe,
     set,
     update,
-    setCountry: (country: Country | null) => update((s) => ({ ...s, selectedCountry: country })),
-    setCity: (city: City | null) => update((s) => ({ ...s, selectedCity: city })),
-    setWeather: (weather: any) => update((s) => ({ ...s, weather })),
+    setCountry: (country: Country | null) => update(s => ({ ...s, selectedCountry: country })),
+    setCity: (city: City | null) => update(s => ({ ...s, selectedCity: city })),
+    setWeather: (weather: any) => update(s => ({ ...s, weather })),
   };
 }
 
-export const appStore = createAppStore(); 
+export const appStore = createAppStore();

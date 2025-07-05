@@ -26,7 +26,7 @@ function createWeatherCacheStore() {
   const initial = loadCache();
   const { subscribe, set, update } = writable<Record<string, WeatherCacheEntry>>(initial);
 
-  subscribe((cache) => saveCache(cache));
+  subscribe(cache => saveCache(cache));
 
   function get(city: { name: string; lat: number; lon: number }) {
     const key = cityKey(city);
@@ -39,7 +39,7 @@ function createWeatherCacheStore() {
 
   function setWeather(city: { name: string; lat: number; lon: number }, weatherData: any) {
     const key = cityKey(city);
-    update((cache) => {
+    update(cache => {
       cache[key] = { weatherData, timestamp: Date.now() };
       return { ...cache };
     });
@@ -52,4 +52,4 @@ function createWeatherCacheStore() {
   };
 }
 
-export const weatherCacheStore = createWeatherCacheStore(); 
+export const weatherCacheStore = createWeatherCacheStore();

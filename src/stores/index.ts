@@ -77,7 +77,7 @@ export const locationData = writable<LocationData>({
   forecast: null,
   name: '',
   country: '',
-  error: null
+  error: null,
 });
 
 // Loading States
@@ -86,7 +86,7 @@ export const loading = writable<LoadingState>({
   cities: false,
   weather: false,
   forecast: false,
-  location: false
+  location: false,
 });
 
 // Error States
@@ -94,7 +94,7 @@ export const errors = writable<ErrorState>({
   countries: null,
   cities: null,
   weather: null,
-  location: null
+  location: null,
 });
 
 // ============================================================================
@@ -106,7 +106,7 @@ export const citiesOfSelectedCountry = derived(
   [cities, selectedCountry],
   ([$cities, $selectedCountry]) => {
     if (!$selectedCountry) return [];
-    
+
     // Filter cities by country code - handle both possible field structures
     return $cities.filter(city => {
       const cityCountryCode = city.countryCode || city.country;
@@ -117,31 +117,24 @@ export const citiesOfSelectedCountry = derived(
 );
 
 // Computed state for weather data with icons
-export const weatherWithIcons = derived(
-  cityWeather,
-  ($cityWeather) => {
-    return Object.fromEntries(
-      Object.entries($cityWeather).map(([cityName, weather]) => [
-        cityName,
-        {
-          temperature: Math.round(weather.temperature),
-          icon: weather.icon,
-          weathercode: weather.weathercode,
-          time: weather.time
-        }
-      ])
-    );
-  }
-);
+export const weatherWithIcons = derived(cityWeather, $cityWeather => {
+  return Object.fromEntries(
+    Object.entries($cityWeather).map(([cityName, weather]) => [
+      cityName,
+      {
+        temperature: Math.round(weather.temperature),
+        icon: weather.icon,
+        weathercode: weather.weathercode,
+        time: weather.time,
+      },
+    ])
+  );
+});
 
 // Computed state for app readiness
-export const appReady = derived(
-  [countries, cities, loading],
-  ([$countries, $cities, $loading]) => {
-    return $countries.length > 0 && $cities.length > 0 && 
-           !$loading.countries && !$loading.cities;
-  }
-);
+export const appReady = derived([countries, cities, loading], ([$countries, $cities, $loading]) => {
+  return $countries.length > 0 && $cities.length > 0 && !$loading.countries && !$loading.cities;
+});
 
 // Computed state for current selection
 export const currentSelection = derived(
@@ -149,7 +142,7 @@ export const currentSelection = derived(
   ([$selectedCountry, $selectedCity]) => ({
     country: $selectedCountry,
     city: $selectedCity,
-    hasSelection: !!(selectedCountry || selectedCity)
+    hasSelection: !!(selectedCountry || selectedCity),
   })
 );
 
@@ -161,7 +154,7 @@ const PERSISTENCE_KEYS = {
   APP_STATE: 'weatherApp_state',
   WEATHER_CACHE: 'weatherCache',
   COUNTRIES: 'countries',
-  CITIES: 'cities'
+  CITIES: 'cities',
 } as const;
 
 function loadFromStorage<T>(key: string, defaultValue: T): T {
@@ -184,7 +177,7 @@ function saveToStorage(key: string, value: any): void {
 // Initialize stores with persisted data
 const initialAppState = loadFromStorage(PERSISTENCE_KEYS.APP_STATE, {
   selectedCountry: null,
-  selectedCity: null
+  selectedCity: null,
 });
 
 selectedCountry.set(initialAppState.selectedCountry);
@@ -195,7 +188,7 @@ selectedCountry.subscribe(value => {
   const current = get(selectedCity);
   saveToStorage(PERSISTENCE_KEYS.APP_STATE, {
     selectedCountry: value,
-    selectedCity: current
+    selectedCity: current,
   });
 });
 
@@ -203,7 +196,7 @@ selectedCity.subscribe(value => {
   const current = get(selectedCountry);
   saveToStorage(PERSISTENCE_KEYS.APP_STATE, {
     selectedCountry: current,
-    selectedCity: value
+    selectedCity: value,
   });
 });
 
@@ -246,9 +239,7 @@ export const actions = {
   addCities: (newCities: City[]) => {
     cities.update(currentCities => {
       const existingIds = new Set(currentCities.map(c => c.geonameId));
-      const uniqueNewCities = newCities.filter(city => 
-        !existingIds.has(city.geonameId)
-      );
+      const uniqueNewCities = newCities.filter(city => !existingIds.has(city.geonameId));
       return [...currentCities, ...uniqueNewCities];
     });
   },
@@ -257,7 +248,7 @@ export const actions = {
   setCityWeather: (cityName: string, weather: WeatherData) => {
     cityWeather.update(current => ({
       ...current,
-      [cityName]: weather
+      [cityName]: weather,
     }));
   },
 
@@ -281,14 +272,15 @@ export const actions = {
   setWeatherCache: (cityKey: string, weatherData: any) => {
     weatherCache.update(cache => ({
       ...cache,
-      [cityKey]: { weatherData, timestamp: Date.now() }
+      [cityKey]: { weatherData, timestamp: Date.now() },
     }));
   },
 
   getWeatherCache: (cityKey: string) => {
     const cache = get(weatherCache);
     const entry = cache[cityKey];
-    if (entry && Date.now() - entry.timestamp < 10 * 60 * 1000) { // 10 minutes
+    if (entry && Date.now() - entry.timestamp < 10 * 60 * 1000) {
+      // 10 minutes
       return entry.weatherData;
     }
     return null;
@@ -314,7 +306,7 @@ export const actions = {
       countries: null,
       cities: null,
       weather: null,
-      location: null
+      location: null,
     });
   },
 
@@ -328,7 +320,7 @@ export const actions = {
       forecast: null,
       name: '',
       country: '',
-      error: null
+      error: null,
     });
     actions.clearErrors();
   },
@@ -337,7 +329,7 @@ export const actions = {
     cityWeather.set({});
     currentForecast.set(null);
     actions.clearErrors();
-  }
+  },
 };
 
 // ============================================================================
@@ -369,9 +361,9 @@ export const selectors = {
     const cache = get(weatherCache);
     return {
       size: Object.keys(cache).length,
-      totalSize: new Blob([JSON.stringify(cache)]).size
+      totalSize: new Blob([JSON.stringify(cache)]).size,
     };
-  }
+  },
 };
 
 // ============================================================================
@@ -388,5 +380,5 @@ export const appStore = {
   subscribe: selectedCountry.subscribe,
   setCountry: actions.setSelectedCountry,
   setCity: actions.setSelectedCity,
-  setWeather: (weather: any) => actions.setCurrentForecast(weather)
-}; 
+  setWeather: (weather: any) => actions.setCurrentForecast(weather),
+};

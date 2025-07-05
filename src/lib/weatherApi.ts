@@ -2,7 +2,7 @@
 export {
   getCurrentWeather as getCurrentWeatherWithCache,
   getForecast as getForecastWithCache,
-  WEATHER_ICONS
+  WEATHER_ICONS,
 } from './services/weatherService';
 
 // Legacy functions for backward compatibility
@@ -28,17 +28,21 @@ export interface Forecast {
 export async function fetchCurrentWeather(lat: number, lon: number): Promise<Weather | null> {
   const city = { name: 'temp', lat, lon, country: 'unknown' };
   const weather = await getCurrentWeather(city);
-  return weather ? {
-    temperature: weather.temperature,
-    weathercode: weather.weathercode,
-    time: weather.time
-  } : null;
+  return weather
+    ? {
+        temperature: weather.temperature,
+        weathercode: weather.weathercode,
+        time: weather.time,
+      }
+    : null;
 }
 
 export async function fetchForecast(lat: number, lon: number): Promise<Forecast | null> {
   const city = { name: 'temp', lat, lon, country: 'unknown' };
   const forecast = await getForecast(city);
-  return forecast ? {
-    daily: forecast.daily
-  } : null;
-} 
+  return forecast
+    ? {
+        daily: forecast.daily,
+      }
+    : null;
+}

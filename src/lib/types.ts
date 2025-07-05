@@ -165,4 +165,4 @@ export interface DataCacheStats {
   cities: number;
   search: number;
   requestStats: Record<string, number>;
-} 
+}

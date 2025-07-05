@@ -23,16 +23,16 @@
     hasError = true;
     error = err;
     errorInfo = info;
-    
+
     // Call custom error handler
     onError(err, info);
-    
+
     // Log error
     console.error('ErrorBoundary caught error:', {
       error: err.message,
       stack: err.stack,
       info,
-      componentStack
+      componentStack,
     });
   }
 
@@ -46,7 +46,7 @@
       error: null,
       errorInfo: null,
       componentStack: undefined,
-      timestamp: 0
+      timestamp: 0,
     });
   }
 
@@ -83,25 +83,21 @@
       <h3>Something went wrong</h3>
       <p class="error-message">{error.message}</p>
       <p class="error-type">Error Type: {error.name}</p>
-      
+
       {#if errorInfo && errorInfo.component}
         <p class="error-component">Component: {errorInfo.component}</p>
       {/if}
-      
+
       {#if componentStack}
         <details class="error-stack">
           <summary>Component Stack</summary>
           <pre>{componentStack}</pre>
         </details>
       {/if}
-      
+
       <div class="error-actions">
-        <button class="retry-button" on:click={retry}>
-          Retry
-        </button>
-        <button class="reset-button" on:click={reset}>
-          Reset
-        </button>
+        <button class="retry-button" on:click={retry}> Retry </button>
+        <button class="reset-button" on:click={reset}> Reset </button>
       </div>
     </div>
   </div>
@@ -211,4 +207,4 @@
   .reset-button:hover {
     background: #545b62;
   }
-</style> 
+</style>

@@ -11,12 +11,12 @@
 </div>
 
 <style>
-.marker {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-}
-span {
-  font-size: 1em;
-}
-</style> 
+  .marker {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+  }
+  span {
+    font-size: 1em;
+  }
+</style>

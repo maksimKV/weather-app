@@ -2,14 +2,20 @@ import { json } from '@sveltejs/kit';
 
 export async function GET({ url }) {
   const username = import.meta.env.VITE_GEONAMES_USERNAME;
-  
+
   if (!username || username === 'your_geonames_username_here') {
-    return new Response(JSON.stringify({ error: 'GeoNames username not configured. Please set VITE_GEONAMES_USERNAME in your .env file.' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return new Response(
+      JSON.stringify({
+        error:
+          'GeoNames username not configured. Please set VITE_GEONAMES_USERNAME in your .env file.',
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
-  
+
   const q = url.searchParams.get('q');
   const country = url.searchParams.get('country'); // ISO country code
   const maxRows = url.searchParams.get('maxRows') || '1000';
@@ -19,18 +25,18 @@ export async function GET({ url }) {
     // Validate parameters
     const maxRowsNum = parseInt(maxRows);
     const startRowNum = parseInt(startRow);
-    
+
     if (isNaN(maxRowsNum) || maxRowsNum < 1 || maxRowsNum > 1000) {
       return new Response(JSON.stringify({ error: 'Invalid maxRows parameter (must be 1-1000)' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
     }
-    
+
     if (isNaN(startRowNum) || startRowNum < 0) {
       return new Response(JSON.stringify({ error: 'Invalid startRow parameter (must be >= 0)' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
     }
 
@@ -40,42 +46,43 @@ export async function GET({ url }) {
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-    
+
     const res = await fetch(apiUrl, {
-      signal: controller.signal
+      signal: controller.signal,
     });
-    
+
     clearTimeout(timeoutId);
-    
+
     if (!res.ok) {
       throw new Error(`GeoNames API responded with status ${res.status}: ${res.statusText}`);
     }
-    
+
     const data = await res.json();
-    
+
     // Validate response structure
     if (!data || !data.geonames || !Array.isArray(data.geonames)) {
       throw new Error('Invalid response format from GeoNames API');
     }
-    
+
     // Filter out invalid cities
-    const validCities = data.geonames.filter((city: any) => 
-      city && 
-      city.name && 
-      city.lat && 
-      city.lng &&
-      typeof city.name === 'string' &&
-      typeof city.lat === 'number' &&
-      typeof city.lng === 'number'
+    const validCities = data.geonames.filter(
+      (city: any) =>
+        city &&
+        city.name &&
+        city.lat &&
+        city.lng &&
+        typeof city.name === 'string' &&
+        typeof city.lat === 'number' &&
+        typeof city.lng === 'number'
     );
-    
+
     return json(validCities);
   } catch (error) {
     console.error('Cities API error:', error);
-    
+
     let errorMessage = 'Failed to fetch cities from GeoNames API';
     let statusCode = 500;
-    
+
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
         errorMessage = 'Request timeout - please try again';
@@ -87,10 +94,10 @@ export async function GET({ url }) {
         errorMessage = error.message;
       }
     }
-    
+
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: statusCode,
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
   }
-} 
+}

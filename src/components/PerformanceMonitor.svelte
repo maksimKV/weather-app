@@ -37,7 +37,7 @@
   <button class="toggle-btn" on:click={toggleVisibility}>
     {isVisible ? 'Hide' : 'Show'} Performance Stats
   </button>
-  
+
   {#if isVisible}
     <div class="stats-container">
       <div class="stats-section">
@@ -67,7 +67,7 @@
           <span>{weatherStats.requestStats?.running || 0}</span>
         </div>
       </div>
-      
+
       <div class="stats-section">
         <h4>Data Service</h4>
         <div class="stat-row">
@@ -96,65 +96,65 @@
 </div>
 
 <style>
-.performance-monitor {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 1000;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  padding: 10px;
-  font-size: 0.8em;
-  max-width: 300px;
-}
+  .performance-monitor {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    font-size: 0.8em;
+    max-width: 300px;
+  }
 
-.toggle-btn {
-  background: var(--primary);
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.8em;
-  margin-bottom: 10px;
-}
+  .toggle-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    margin-bottom: 10px;
+  }
 
-.toggle-btn:hover {
-  background: var(--primary-dark);
-}
+  .toggle-btn:hover {
+    background: var(--primary-dark);
+  }
 
-.stats-container {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+  .stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
 
-.stats-section {
-  border: 1px solid #eee;
-  border-radius: 4px;
-  padding: 8px;
-}
+  .stats-section {
+    border: 1px solid #eee;
+    border-radius: 4px;
+    padding: 8px;
+  }
 
-.stats-section h4 {
-  margin: 0 0 8px 0;
-  font-size: 0.9em;
-  color: var(--primary);
-}
+  .stats-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.9em;
+    color: var(--primary);
+  }
 
-.stat-row {
-  display: flex;
-  justify-content: space-between;
-  margin: 2px 0;
-  font-size: 0.8em;
-}
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 2px 0;
+    font-size: 0.8em;
+  }
 
-.stat-row span:first-child {
-  color: #666;
-}
+  .stat-row span:first-child {
+    color: #666;
+  }
 
-.stat-row span:last-child {
-  font-weight: 600;
-  color: var(--primary);
-}
-</style> 
+  .stat-row span:last-child {
+    font-weight: 600;
+    color: var(--primary);
+  }
+</style>

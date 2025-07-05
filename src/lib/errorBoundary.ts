@@ -31,7 +31,7 @@ export const errorStore: Writable<ErrorBoundaryState> = writable({
   error: null,
   errorInfo: null,
   componentStack: undefined,
-  timestamp: 0
+  timestamp: 0,
 });
 
 // ============================================================================
@@ -43,22 +43,22 @@ export function isErrorRecoverable(error: Error): boolean {
   if (error.name === 'TypeError' && error.message.includes('fetch')) {
     return true;
   }
-  
+
   // API errors are recoverable
   if (error.message.includes('HTTP') || error.message.includes('API')) {
     return true;
   }
-  
+
   // Data parsing errors are recoverable
   if (error.name === 'SyntaxError' || error.message.includes('JSON')) {
     return true;
   }
-  
+
   // Component rendering errors might be recoverable
   if (error.message.includes('Cannot read property') || error.message.includes('undefined')) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -84,11 +84,7 @@ export function getErrorCategory(error: Error): string {
 // Note: This function is kept for compatibility but the Svelte ErrorBoundary component
 // is the preferred way to handle errors in this application
 export function createErrorBoundary(options: ErrorBoundaryOptions = {}) {
-  const {
-    fallback,
-    onError,
-    resetOnPropsChange = true
-  } = options;
+  const { fallback, onError, resetOnPropsChange = true } = options;
 
   return {
     // Error handler
@@ -97,7 +93,7 @@ export function createErrorBoundary(options: ErrorBoundaryOptions = {}) {
         hasError: true,
         error,
         errorInfo,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       errorStore.set(errorState);
@@ -117,7 +113,7 @@ export function createErrorBoundary(options: ErrorBoundaryOptions = {}) {
         stack: error.stack,
         info: errorInfo,
         category: getErrorCategory(error),
-        recoverable: isErrorRecoverable(error)
+        recoverable: isErrorRecoverable(error),
       });
     },
 
@@ -128,9 +124,9 @@ export function createErrorBoundary(options: ErrorBoundaryOptions = {}) {
         error: null,
         errorInfo: null,
         componentStack: undefined,
-        timestamp: 0
+        timestamp: 0,
       });
-    }
+    },
   };
 }
 
@@ -141,7 +137,7 @@ export function createErrorBoundary(options: ErrorBoundaryOptions = {}) {
 export function createDefaultFallback(error: Error, errorInfo: any) {
   const category = getErrorCategory(error);
   const isRecoverable = isErrorRecoverable(error);
-  
+
   return {
     component: {
       template: `
@@ -197,8 +193,8 @@ export function createDefaultFallback(error: Error, errorInfo: any) {
         .error-retry:hover {
           background: #0056b3;
         }
-      `
-    }
+      `,
+    },
   };
 }
 
@@ -208,25 +204,25 @@ export function createDefaultFallback(error: Error, errorInfo: any) {
 
 export function setupGlobalErrorHandlers() {
   // Handle unhandled promise rejections
-  window.addEventListener('unhandledrejection', (event) => {
+  window.addEventListener('unhandledrejection', event => {
     console.error('Unhandled promise rejection:', event.reason);
     errorStore.set({
       hasError: true,
       error: new Error(`Unhandled Promise Rejection: ${event.reason}`),
       errorInfo: { type: 'unhandledrejection', reason: event.reason },
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
     event.preventDefault();
   });
 
   // Handle global errors
-  window.addEventListener('error', (event) => {
+  window.addEventListener('error', event => {
     console.error('Global error:', event.error);
     errorStore.set({
       hasError: true,
       error: event.error || new Error(event.message),
       errorInfo: { type: 'global', filename: event.filename, lineno: event.lineno },
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   });
 
@@ -238,7 +234,7 @@ export function setupGlobalErrorHandlers() {
         hasError: true,
         error,
         errorInfo: { type: 'svelte' },
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     };
   }
@@ -281,48 +277,48 @@ export function safeAsyncCall<T>(fn: () => Promise<T>, defaultValue: T): Promise
 
 export function validateWeatherData(data: any): boolean {
   if (!data || typeof data !== 'object') return false;
-  
+
   // Check for required weather properties
   if (data.daily && typeof data.daily === 'object') {
     const required = ['time', 'temperature_2m_min', 'temperature_2m_max', 'weathercode'];
     return required.every(prop => Array.isArray(data.daily[prop]));
   }
-  
+
   // Check for current weather properties
   if (data.temperature !== undefined && data.weathercode !== undefined) {
     return true;
   }
-  
+
   return false;
 }
 
 export function validateCityData(data: any): boolean {
   if (!data || typeof data !== 'object') return false;
-  
+
   // Check for required properties
   if (!data.name || typeof data.name !== 'string') return false;
-  
+
   // Check for coordinates - allow both string and number types
   const lat = data.lat;
   const lon = data.lon || data.lng;
-  
+
   if (lat === undefined || lat === null) return false;
   if (lon === undefined || lon === null) return false;
-  
+
   // Convert to numbers and validate
   const latNum = Number(lat);
   const lonNum = Number(lon);
-  
+
   if (isNaN(latNum) || isNaN(lonNum)) return false;
   if (latNum < -90 || latNum > 90) return false;
   if (lonNum < -180 || lonNum > 180) return false;
-  
+
   return true;
 }
 
 export function validateCountryData(data: any): boolean {
   if (!data || typeof data !== 'object') return false;
-  
+
   const required = ['countryCode', 'countryName'];
   return required.every(prop => data[prop] !== undefined);
-} 
+}

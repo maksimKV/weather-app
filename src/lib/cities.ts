@@ -66,4 +66,4 @@ export const cities: City[] = [
   { name: 'Brasília', lat: -15.7939, lon: -47.8828, country: 'BR' },
   { name: 'Salvador', lat: -12.9777, lon: -38.5016, country: 'BR' },
   { name: 'Fortaleza', lat: -3.7172, lon: -38.5431, country: 'BR' },
-]; 
+];
