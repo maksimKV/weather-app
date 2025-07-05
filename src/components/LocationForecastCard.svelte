@@ -84,7 +84,9 @@
           minWidth="80px"
           cardBg="var(--secondary)"
           cardMargin="0 0.3em"
-          humidity={forecast.daily.relative_humidity_2m_max ? forecast.daily.relative_humidity_2m_max[i] : undefined}
+          humidity={forecast.daily.relative_humidity_2m_max
+            ? forecast.daily.relative_humidity_2m_max[i]
+            : undefined}
           sunrise={forecast.daily.sunrise ? forecast.daily.sunrise[i] : undefined}
           sunset={forecast.daily.sunset ? forecast.daily.sunset[i] : undefined}
           uvIndex={forecast.daily.uv_index_max ? forecast.daily.uv_index_max[i] : undefined}

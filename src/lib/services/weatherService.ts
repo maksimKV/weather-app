@@ -348,7 +348,8 @@ async function fetchForecastRaw(lat: number, lon: number): Promise<Forecast | nu
   const params = {
     latitude: lat,
     longitude: lon,
-    daily: 'temperature_2m_max,temperature_2m_min,weathercode,relative_humidity_2m_max,relative_humidity_2m_min,sunrise,sunset,uv_index_max',
+    daily:
+      'temperature_2m_max,temperature_2m_min,weathercode,relative_humidity_2m_max,relative_humidity_2m_min,sunrise,sunset,uv_index_max',
     forecast_days: 16,
     timezone: 'auto',
   };

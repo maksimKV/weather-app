@@ -74,18 +74,38 @@
     <div class="weather-col">
       <span class="min-temp temp-block">
         <span class="temp-row">
-          <img class="temp-icon" src={safeMinIcon} alt="min temp" width="18" height="18" on:error={() => (safeMinIcon = '/weather-icons/min-temp.svg')} />
+          <img
+            class="temp-icon"
+            src={safeMinIcon}
+            alt="min temp"
+            width="18"
+            height="18"
+            on:error={() => (safeMinIcon = '/weather-icons/min-temp.svg')}
+          />
           {safeMinC}°C
         </span>
         <div class="temp-separator"></div>
         <span class="temp-row">
-          <img class="temp-icon" src={safeMinIcon} alt="min temp" width="18" height="18" on:error={() => (safeMinIcon = '/weather-icons/min-temp.svg')} />
+          <img
+            class="temp-icon"
+            src={safeMinIcon}
+            alt="min temp"
+            width="18"
+            height="18"
+            on:error={() => (safeMinIcon = '/weather-icons/min-temp.svg')}
+          />
           {minF}°F
         </span>
       </span>
       {#if sunrise}
         <span class="temp-row">
-          <img class="temp-icon" src="/weather-icons/sunrise.svg" alt="sunrise" width="18" height="18" />
+          <img
+            class="temp-icon"
+            src="/weather-icons/sunrise.svg"
+            alt="sunrise"
+            width="18"
+            height="18"
+          />
           <span class="sunrise-time">{sunrise.slice(11, 16)}</span>
         </span>
       {/if}
@@ -93,18 +113,38 @@
     <div class="weather-col">
       <span class="max-temp temp-block">
         <span class="temp-row">
-          <img class="temp-icon" src={safeMaxIcon} alt="max temp" width="18" height="18" on:error={() => (safeMaxIcon = '/weather-icons/clear-day.svg')} />
+          <img
+            class="temp-icon"
+            src={safeMaxIcon}
+            alt="max temp"
+            width="18"
+            height="18"
+            on:error={() => (safeMaxIcon = '/weather-icons/clear-day.svg')}
+          />
           {safeMaxC}°C
         </span>
         <div class="temp-separator"></div>
         <span class="temp-row">
-          <img class="temp-icon" src={safeMaxIcon} alt="max temp" width="18" height="18" on:error={() => (safeMaxIcon = '/weather-icons/clear-day.svg')} />
+          <img
+            class="temp-icon"
+            src={safeMaxIcon}
+            alt="max temp"
+            width="18"
+            height="18"
+            on:error={() => (safeMaxIcon = '/weather-icons/clear-day.svg')}
+          />
           {maxF}°F
         </span>
       </span>
       {#if sunset}
         <span class="temp-row">
-          <img class="temp-icon" src="/weather-icons/sunset.svg" alt="sunset" width="18" height="18" />
+          <img
+            class="temp-icon"
+            src="/weather-icons/sunset.svg"
+            alt="sunset"
+            width="18"
+            height="18"
+          />
           <span class="sunset-time">{sunset.slice(11, 16)}</span>
         </span>
       {/if}
@@ -114,7 +154,16 @@
     <div class="extra-weather-details">
       <div class="detail-row">
         {#if humidity !== undefined}
-          <span class="detail-item"><img class="icon-img" src="/weather-icons/humidity.svg" alt="humidity" width="18" height="18" /> {humidity}%</span>
+          <span class="detail-item"
+            ><img
+              class="icon-img"
+              src="/weather-icons/humidity.svg"
+              alt="humidity"
+              width="18"
+              height="18"
+            />
+            {humidity}%</span
+          >
         {/if}
       </div>
       <div class="detail-row">
@@ -122,7 +171,16 @@
       </div>
       <div class="detail-row">
         {#if uvIndex !== undefined}
-          <span class="detail-item"><img class="icon-img" src="/weather-icons/uv.svg" alt="uv index" width="18" height="18" /> <span style="color: {uvColor(uvIndex)};">UV: {uvIndex} ({uvLabel(uvIndex)})</span></span>
+          <span class="detail-item"
+            ><img
+              class="icon-img"
+              src="/weather-icons/uv.svg"
+              alt="uv index"
+              width="18"
+              height="18"
+            />
+            <span style="color: {uvColor(uvIndex)};">UV: {uvIndex} ({uvLabel(uvIndex)})</span></span
+          >
         {/if}
       </div>
     </div>
@@ -147,10 +205,6 @@
 
   .big-weather-icon {
     margin-bottom: 0.5em;
-  }
-  .temps {
-    display: flex;
-    gap: 0.5em;
   }
   .min-temp {
     color: #2196f3;
@@ -203,10 +257,6 @@
     color: #444;
     font-weight: 500;
   }
-  .icon {
-    font-size: 1.1em;
-    vertical-align: middle;
-  }
   .icon-img {
     display: inline-block;
     vertical-align: middle;
@@ -234,12 +284,12 @@
     min-width: 90px;
   }
   .sunrise-time {
-    color: #FFD600;
+    color: #ffd600;
     font-weight: 600;
     font-size: 1em;
   }
   .sunset-time {
-    color: #FF9800;
+    color: #ff9800;
     font-weight: 600;
     font-size: 1em;
   }
