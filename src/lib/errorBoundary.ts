@@ -110,7 +110,6 @@ export function createErrorBoundary(options: ErrorBoundaryOptions = {}) {
       if (onError) {
         try {
           onError(error, errorInfo);
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_handlerError) {
           logDevError('Error in error handler:', _handlerError);
         }

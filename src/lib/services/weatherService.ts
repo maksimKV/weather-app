@@ -491,7 +491,6 @@ export async function getForecast(city: City): Promise<ForecastWithIcons | null>
     actions.setWeatherCache(cityKey, forecast);
 
     return forecastWithIcons;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (_error) {
     logDevError('Error fetching forecast:', _error);
     return null;
@@ -578,7 +577,6 @@ export async function getWeatherForCities(
         if (weather) {
           return { cityName: normalized.name, weather };
         }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (_error) {
         logDevError(`Error fetching weather for ${city.name}:`, _error);
       }

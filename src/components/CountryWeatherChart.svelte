@@ -18,59 +18,116 @@
   let chartContainer: ChartContainer;
   let chart: Chart | null = null;
   let chartId = `country-chart-${Math.random().toString(36).substr(2, 9)}`;
+  let isDestroyed = false; // Track if component is being destroyed
+  let pendingChartCreation: number | null = null; // Track pending chart creation
+  let lastDataHash = ''; // Track data changes to prevent unnecessary updates
 
-  function transformCityDataForChart() {
-    // Filter cities that have weather data and limit to maxCities
-    const citiesWithWeather = cities
-      .filter(city => weatherData[city.name] && weatherData[city.name].temperature !== undefined)
-      .slice(0, maxCities)
-      .sort((a, b) => weatherData[b.name].temperature - weatherData[a.name].temperature); // Sort by temperature
+  // Create a hash of the current data to detect significant changes
+  function createDataHash(): string {
+    try {
+      const citiesWithWeather = cities
+        .filter(city => weatherData[city.name] && weatherData[city.name].temperature !== undefined)
+        .slice(0, maxCities);
 
-    const labels = citiesWithWeather.map(city => city.name);
-    const temperatures = citiesWithWeather.map(city => weatherData[city.name].temperature);
-
-    // Color coding based on temperature
-    const colors = temperatures.map(temp => {
-      if (temp >= 25) return '#f44336'; // Hot - Red
-      if (temp >= 15) return '#ff9800'; // Warm - Orange
-      if (temp >= 5) return '#2196f3'; // Cool - Blue
-      return '#3f51b5'; // Cold - Indigo
-    });
-
-    return {
-      labels,
-      datasets: [
-        {
-          label: 'Current Temperature',
-          data: temperatures,
-          backgroundColor: colors,
-          borderColor: colors.map(color => color.replace('0.8', '1')),
-          borderWidth: 2,
-          borderRadius: 6,
-          borderSkipped: false,
-          maxBarThickness: 50,
-        },
-      ],
-    };
+      return JSON.stringify({
+        cities: citiesWithWeather.map(c => ({ name: c.name, lat: c.lat, lon: c.lon })),
+        temperatures: citiesWithWeather.map(c => weatherData[c.name].temperature),
+        maxCities,
+        countryName,
+      });
+    } catch (error) {
+      logDevError('Error creating data hash:', error);
+      return '';
+    }
   }
 
-  function createChart() {
+  // Enhanced cleanup function with error handling
+  function destroyChart(): void {
     try {
-      if (!chartContainer || cities.length === 0) return;
-
-      // Destroy existing chart if it exists
-      if (chart) {
+      if (chart && !isDestroyed) {
         chart.destroy();
         chart = null;
+        // Remove debug log to reduce console noise
+        // logDevError('Chart destroyed successfully');
+      }
+    } catch (error) {
+      logDevError('Error destroying chart:', error);
+      // Force null even if destroy fails
+      chart = null;
+    }
+  }
+
+  // Cancel any pending chart creation
+  function cancelPendingChartCreation(): void {
+    if (pendingChartCreation !== null) {
+      clearTimeout(pendingChartCreation);
+      pendingChartCreation = null;
+    }
+  }
+
+  function transformCityDataForChart() {
+    try {
+      // Filter cities that have weather data and limit to maxCities
+      const citiesWithWeather = cities
+        .filter(city => weatherData[city.name] && weatherData[city.name].temperature !== undefined)
+        .slice(0, maxCities)
+        .sort((a, b) => weatherData[b.name].temperature - weatherData[a.name].temperature); // Sort by temperature
+
+      const labels = citiesWithWeather.map(city => city.name);
+      const temperatures = citiesWithWeather.map(city => weatherData[city.name].temperature);
+
+      // Color coding based on temperature
+      const colors = temperatures.map(temp => {
+        if (temp >= 25) return '#f44336'; // Hot - Red
+        if (temp >= 15) return '#ff9800'; // Warm - Orange
+        if (temp >= 5) return '#2196f3'; // Cool - Blue
+        return '#3f51b5'; // Cold - Indigo
+      });
+
+      return {
+        labels,
+        datasets: [
+          {
+            label: 'Current Temperature',
+            data: temperatures,
+            backgroundColor: colors,
+            borderColor: colors.map(color => color.replace('0.8', '1')),
+            borderWidth: 2,
+            borderRadius: 6,
+            borderSkipped: false,
+            maxBarThickness: 50,
+          },
+        ],
+      };
+    } catch (error) {
+      logDevError('Error transforming city data for chart:', error);
+      return { labels: [], datasets: [] };
+    }
+  }
+
+  function createChart(): void {
+    try {
+      // Cleanup guards - check if we should proceed
+      if (isDestroyed || !chartContainer || cities.length === 0) {
+        return;
       }
 
+      // Destroy existing chart if it exists (reactive cleanup)
+      destroyChart();
+
       const ctx = chartContainer.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {
+        logDevError('Could not get 2D context from canvas');
+        return;
+      }
 
       const chartData = transformCityDataForChart();
 
       // Don't create chart if no data
-      if (chartData.labels.length === 0) return;
+      if (chartData.labels.length === 0) {
+        logDevError('No chart data available');
+        return;
+      }
 
       chart = new Chart(ctx, {
         type: 'bar',
@@ -160,47 +217,91 @@
           },
         },
       });
+
+      // Remove debug log to reduce console noise
+      // logDevError('Chart created successfully');
     } catch (error) {
       logDevError('Error creating country weather chart:', error);
       chart = null;
     }
   }
 
-  function updateChart() {
-    if (chart) {
-      const chartData = transformCityDataForChart();
-      if (chartData.labels.length > 0) {
-        chart.data = chartData;
-        chart.update('active');
+  function updateChart(): void {
+    try {
+      if (chart && !isDestroyed) {
+        const chartData = transformCityDataForChart();
+        if (chartData.labels.length > 0) {
+          chart.data = chartData;
+          chart.update('active');
+        }
+      }
+    } catch (error) {
+      logDevError('Error updating chart:', error);
+    }
+  }
+
+  // Debounced chart creation to handle rapid changes
+  function scheduleChartCreation(): void {
+    cancelPendingChartCreation();
+    
+    if (isDestroyed) return;
+
+    pendingChartCreation = setTimeout(() => {
+      // Double-check if component is still alive before creating chart
+      if (!isDestroyed && chartContainer) {
+        createChart();
+      }
+      pendingChartCreation = null;
+    }, 100); // 100ms debounce
+  }
+
+  onMount(() => {
+    try {
+      isDestroyed = false;
+      // Use a shorter delay for initial mount to avoid race conditions
+      pendingChartCreation = setTimeout(() => {
+        if (!isDestroyed && chartContainer) {
+          createChart();
+        }
+        pendingChartCreation = null;
+      }, 50);
+    } catch (error) {
+      logDevError('Error in onMount:', error);
+    }
+  });
+
+  onDestroy(() => {
+    try {
+      isDestroyed = true;
+      cancelPendingChartCreation();
+      destroyChart();
+      // Remove the debug log to reduce console noise
+      // logDevError('Component destroyed, cleanup completed');
+    } catch (error) {
+      logDevError('Error in onDestroy:', error);
+    }
+  });
+
+  // Reactive cleanup and chart management
+  $: if (!isDestroyed && cities.length > 0 && Object.keys(weatherData).length > 0) {
+    const currentDataHash = createDataHash();
+    
+    // Only update if data has actually changed significantly
+    if (currentDataHash !== lastDataHash) {
+      lastDataHash = currentDataHash;
+      
+      if (chart) {
+        // Update existing chart
+        updateChart();
+      } else {
+        // Create new chart if none exists
+        scheduleChartCreation();
       }
     }
   }
 
-  onMount(() => {
-    createChart();
-  });
-
-  onDestroy(() => {
-    if (chart) {
-      chart.destroy();
-      chart = null;
-    }
-  });
-
-  // Update chart when data changes
-  $: if (cities.length > 0 && Object.keys(weatherData).length > 0 && chart) {
-    updateChart();
-  }
-
-  // Recreate chart when cities or weather data changes significantly
-  $: if (cities.length > 0 && Object.keys(weatherData).length > 0 && !chart) {
-    setTimeout(createChart, 0);
-  }
-
-  // Handle component updates more safely
-  $: if (cities.length > 0 && Object.keys(weatherData).length > 0 && !chart) {
-    setTimeout(createChart, 0);
-  }
+  // Handle component updates more safely - remove duplicate reactive statement
+  // The above reactive statement handles all cases
 </script>
 
 <div class="country-weather-chart" style="height: {height};">

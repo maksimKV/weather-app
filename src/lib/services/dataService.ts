@@ -364,7 +364,6 @@ async function fetchCitiesInParallelBatches(): Promise<City[]> {
         }
 
         return [];
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (error) {
         logDevError('Error fetching cities batch:', error);
         // Continue with the cities we've already fetched instead of failing completely
