@@ -12,6 +12,13 @@
   export let minWidth: string = '80px';
   export let cardBg: string = 'var(--secondary)';
   export let cardMargin: string = '0 0.3em';
+  export let humidity: number | undefined;
+  export let windspeed: number | undefined;
+  export let winddirection: number | undefined;
+  export let precipitation: number | undefined;
+  export let sunrise: string | undefined;
+  export let sunset: string | undefined;
+  export let uvIndex: number | undefined;
 
   // Validate and sanitize inputs
   $: safeMinC = safeCall(() => Number(minC) || 0, 0);
@@ -33,6 +40,31 @@
   // Calculate Fahrenheit safely
   $: minF = safeCall(() => ((safeMinC * 9) / 5 + 32).toFixed(1), '0.0');
   $: maxF = safeCall(() => ((safeMaxC * 9) / 5 + 32).toFixed(1), '0.0');
+
+  // Helper for wind direction
+  function windDirText(deg: number | undefined): string {
+    if (deg === undefined) return '';
+    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return dirs[Math.round(((deg % 360) / 45)) % 8];
+  }
+
+  // Helper for UV color
+  function uvColor(val: number | undefined): string {
+    if (val === undefined) return '#bbb';
+    if (val < 3) return '#4caf50'; // green
+    if (val < 6) return '#ffeb3b'; // yellow
+    if (val < 8) return '#ff9800'; // orange
+    return '#f44336'; // red
+  }
+
+  // Helper for UV label
+  function uvLabel(val: number | undefined): string {
+    if (val === undefined) return '';
+    if (val < 3) return 'Low';
+    if (val < 6) return 'Moderate';
+    if (val < 8) return 'High';
+    return 'Very High';
+  }
 </script>
 
 <div
@@ -100,6 +132,31 @@
       >
     </span>
   </div>
+  {#if humidity !== undefined || windspeed !== undefined || precipitation !== undefined || sunrise || sunset || uvIndex !== undefined}
+    <div class="extra-weather-details">
+      <div class="detail-row">
+        {#if humidity !== undefined}
+          <span class="detail-item"><span class="icon">💧</span> {humidity}%</span>
+        {/if}
+        {#if windspeed !== undefined}
+          <span class="detail-item"><span class="icon">🌀</span> {windspeed} km/h {windDirText(winddirection)}</span>
+        {/if}
+      </div>
+      <div class="detail-row">
+        {#if precipitation !== undefined}
+          <span class="detail-item"><span class="icon">☔</span> {precipitation} mm</span>
+        {/if}
+        {#if sunrise && sunset}
+          <span class="detail-item"><span class="icon">☀️</span> {sunrise.slice(11, 16)} / {sunset.slice(11, 16)}</span>
+        {/if}
+      </div>
+      <div class="detail-row">
+        {#if uvIndex !== undefined}
+          <span class="detail-item"><span class="icon" style="color: {uvColor(uvIndex)};">●</span> UV: {uvIndex} ({uvLabel(uvIndex)})</span>
+        {/if}
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -145,5 +202,32 @@
     vertical-align: middle;
     position: relative;
     top: 2px;
+  }
+  .extra-weather-details {
+    margin-top: 0.7em;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    align-items: flex-start;
+    font-size: 0.98em;
+  }
+  .detail-row {
+    display: flex;
+    flex-direction: row;
+    gap: 1.2em;
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .detail-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+    color: #444;
+    font-weight: 500;
+  }
+  .icon {
+    font-size: 1.1em;
+    vertical-align: middle;
   }
 </style>

@@ -84,6 +84,13 @@
           minWidth="80px"
           cardBg="var(--secondary)"
           cardMargin="0 0.3em"
+          humidity={forecast.daily.relative_humidity_2m_max ? forecast.daily.relative_humidity_2m_max[i] : undefined}
+          windspeed={forecast.daily.windspeed_10m_max ? forecast.daily.windspeed_10m_max[i] : undefined}
+          winddirection={forecast.daily.winddirection_10m_dominant ? forecast.daily.winddirection_10m_dominant[i] : undefined}
+          precipitation={forecast.daily.precipitation_sum ? forecast.daily.precipitation_sum[i] : undefined}
+          sunrise={forecast.daily.sunrise ? forecast.daily.sunrise[i] : undefined}
+          sunset={forecast.daily.sunset ? forecast.daily.sunset[i] : undefined}
+          uvIndex={forecast.daily.uv_index_max ? forecast.daily.uv_index_max[i] : undefined}
         />
       {/each}
     </div>

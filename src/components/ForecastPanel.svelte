@@ -48,6 +48,13 @@
   $: dailyMax = safeAccess(forecast, ['daily', 'temperature_2m_max'], []);
   $: dailyWeathercode = safeAccess(forecast, ['daily', 'weathercode'], []);
   $: icons = safeAccess(forecast, ['icons'], {});
+  $: dailyHumidity = safeAccess(forecast, ['daily', 'relative_humidity_2m_max'], []);
+  $: dailyWindspeed = safeAccess(forecast, ['daily', 'windspeed_10m_max'], []);
+  $: dailyWinddirection = safeAccess(forecast, ['daily', 'winddirection_10m_dominant'], []);
+  $: dailyPrecipitation = safeAccess(forecast, ['daily', 'precipitation_sum'], []);
+  $: dailySunrise = safeAccess(forecast, ['daily', 'sunrise'], []);
+  $: dailySunset = safeAccess(forecast, ['daily', 'sunset'], []);
+  $: dailyUvIndex = safeAccess(forecast, ['daily', 'uv_index_max'], []);
 </script>
 
 {#if isValidForecast && dailyTime.length > 0}
@@ -75,6 +82,13 @@
           minWidth="70px"
           cardBg="#fff"
           cardMargin="0 0.3em"
+          humidity={dailyHumidity[i]}
+          windspeed={dailyWindspeed[i]}
+          winddirection={dailyWinddirection[i]}
+          precipitation={dailyPrecipitation[i]}
+          sunrise={dailySunrise[i]}
+          sunset={dailySunset[i]}
+          uvIndex={dailyUvIndex[i]}
         />
       {/if}
     {/each}

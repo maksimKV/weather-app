@@ -34,6 +34,14 @@ export interface WeatherData {
     temperature_2m_min: number[];
     temperature_2m_max: number[];
     weathercode: number[];
+    relative_humidity_2m_max?: number[];
+    relative_humidity_2m_min?: number[];
+    precipitation_sum?: number[];
+    windspeed_10m_max?: number[];
+    winddirection_10m_dominant?: number[];
+    sunrise?: string[];
+    sunset?: string[];
+    uv_index_max?: number[];
   };
   icons?: Record<number, string>;
 }
@@ -135,6 +143,14 @@ export interface WeatherApiResponse {
     temperature_2m_min: number[];
     temperature_2m_max: number[];
     weathercode: number[];
+    relative_humidity_2m_max?: number[];
+    relative_humidity_2m_min?: number[];
+    precipitation_sum?: number[];
+    windspeed_10m_max?: number[];
+    winddirection_10m_dominant?: number[];
+    sunrise?: string[];
+    sunset?: string[];
+    uv_index_max?: number[];
   };
 }
 
