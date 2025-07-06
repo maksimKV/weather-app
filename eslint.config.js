@@ -83,7 +83,12 @@ export default [
     },
   },
   {
-    files: ['**/*.test.{js,ts}', '**/*.spec.{js,ts}', '**/__tests__/**/*.{js,ts}', '**/test/**/*.{js,ts}'],
+    files: [
+      '**/*.test.{js,ts}',
+      '**/*.spec.{js,ts}',
+      '**/__tests__/**/*.{js,ts}',
+      '**/test/**/*.{js,ts}',
+    ],
     languageOptions: {
       parser: typescriptParser,
       parserOptions: {

@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { mockWeatherData, mockForecastData } from './data/weather';
 import { mockCities } from './data/cities';
 import { mockCountries } from './data/countries';
+import { setupServer } from 'msw/node';
 
 export const handlers = [
   // Weather API
@@ -53,3 +54,5 @@ export const handlers = [
     return HttpResponse.json(mockCities);
   }),
 ];
+
+export const server = setupServer(...handlers);
