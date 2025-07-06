@@ -354,6 +354,17 @@
 
 <main>
   <PerformanceMonitor />
+  
+  <!-- Cache notice for users experiencing issues -->
+  {#if typeof window !== 'undefined' && $selectedCountry && !cityManuallySelected}
+    <div class="cache-notice" in:fade>
+      <p>
+        <strong>Having issues?</strong> If the map or selections seem stuck, 
+        <a href="/clear-cache" target="_blank">clear the cache</a> to reset the app.
+      </p>
+    </div>
+  {/if}
+  
   <ErrorBoundary>
     <div class="weather-title-wrapper">
       <span class="weather-icon-spin">
@@ -614,5 +625,30 @@
   .error-help {
     font-size: 0.9em;
     color: #856404;
+  }
+  
+  .cache-notice {
+    background: #e3f2fd;
+    border: 1px solid #90caf9;
+    border-radius: var(--border-radius);
+    padding: 0.75em 1em;
+    margin-bottom: 1em;
+    text-align: center;
+    font-size: 0.9em;
+  }
+  
+  .cache-notice p {
+    margin: 0;
+    color: #1976d2;
+  }
+  
+  .cache-notice a {
+    color: #1565c0;
+    text-decoration: underline;
+    font-weight: 600;
+  }
+  
+  .cache-notice a:hover {
+    color: #0d47a1;
   }
 </style>

@@ -40,6 +40,11 @@
       actions.resetApp();
       updateStats();
       console.log('All cache cleared successfully');
+      
+      // Reload the page after clearing cache
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (error) {
       logDevError('Error clearing cache:', error);
     }
