@@ -18,7 +18,7 @@ export const handlers = [
   }),
 
   // Location API
-  http.get('https://ipapi.co/json/', () => {
+  http.get('/api/location', () => {
     return HttpResponse.json({
       latitude: 51.5074,
       longitude: -0.1278,

@@ -274,11 +274,18 @@
       });
     } catch (error) {
       logDevError('Error detecting user location for forecast:', error);
+
+      // Handle rate limiting specifically
+      let errorMessage = ERROR_MESSAGES.LOCATION.DETERMINE_FAILED;
+      if (error instanceof Error && error.message.includes('Rate limit')) {
+        errorMessage = ERROR_MESSAGES.LOCATION.RATE_LIMIT;
+      }
+
       actions.setLocationData({
         forecast: null,
         name: ERROR_MESSAGES.LOCATION.UNAVAILABLE,
         country: 'Unknown',
-        error: ERROR_MESSAGES.LOCATION.DETERMINE_FAILED,
+        error: errorMessage,
       });
     } finally {
       actions.setLoading('location', false);

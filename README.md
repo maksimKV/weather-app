@@ -26,7 +26,7 @@ A modern, responsive weather application built with SvelteKit that provides real
 - **Frontend:** SvelteKit, TypeScript
 - **Styling:** CSS with custom design system
 - **Maps:** MapLibre GL JS
-- **APIs:** 
+- **APIs:**
   - Open-Meteo (weather data)
   - GeoNames (location data)
 - **Testing:** Vitest, MSW (Mock Service Worker)
@@ -42,25 +42,29 @@ A modern, responsive weather application built with SvelteKit that provides real
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/maksimKV/weather-app.git
    cd weather-app
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
    Create a `.env` file in the root directory:
+
    ```env
    VITE_GEONAMES_USERNAME=your_geonames_username
    ```
-   
+
    > **Note:** You'll need to sign up for a free GeoNames account at [geonames.org](https://www.geonames.org/login) to get location data.
 
 4. **Start the development server**
+
    ```bash
    npm run dev
    ```
@@ -91,6 +95,7 @@ weather-app/
 The project includes comprehensive testing with Vitest and MSW for API mocking.
 
 ### Run Tests
+
 ```bash
 # Run all tests
 npm test
@@ -108,7 +113,9 @@ npm run format
 ## 🔧 Key Features Explained
 
 ### 🧹 Clear Cache
+
 The clear cache functionality allows users to reset the application's stored data. This is useful when:
+
 - The app seems stuck or unresponsive
 - Weather data appears outdated
 - Map markers aren't updating correctly
@@ -117,7 +124,9 @@ The clear cache functionality allows users to reset the application's stored dat
 **How to use:** Click the "clear cache" link in the app or navigate to `/clear-cache` to reset all stored data.
 
 ### 📊 Performance Monitor
+
 The built-in performance monitor tracks:
+
 - **API Response Times** - How quickly weather data loads
 - **Map Rendering Performance** - Map interaction smoothness
 - **Memory Usage** - Application memory consumption
@@ -128,6 +137,7 @@ This helps identify performance bottlenecks and ensures the app runs smoothly ac
 ## 🎨 Design System
 
 The app uses a custom design system with:
+
 - **Color Palette:** Blue gradients for weather themes
 - **Typography:** Montserrat font family
 - **Icons:** Custom SVG weather icons
@@ -171,6 +181,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 If you encounter any issues or have questions:
+
 1. Check the [Issues](https://github.com/maksimKV/weather-app/issues) page
 2. Create a new issue with detailed information
 3. Include your browser, operating system, and steps to reproduce

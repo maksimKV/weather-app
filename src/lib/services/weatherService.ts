@@ -68,7 +68,7 @@ export interface WeatherServiceError {
 // ============================================================================
 
 const BASE_URL = 'https://api.open-meteo.com/v1/forecast';
-const IP_API_URL = 'https://ipapi.co/json/';
+const IP_API_URL = '/api/location';
 const REQUEST_DELAY_MS = 50; // Reduced delay for better performance
 const MAX_CONCURRENT_REQUESTS = 6; // Increased concurrency
 const CACHE_DURATION_MS = 10 * 60 * 1000; // 10 minutes
@@ -313,7 +313,23 @@ async function makeRequest<T>(url: string, signal?: AbortSignal): Promise<T> {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Handle rate limiting specifically
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again later.');
+      }
+
+      // Try to get error details from response
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+      try {
+        const errorData = await response.json();
+        if (errorData && typeof errorData === 'object' && 'error' in errorData) {
+          errorMessage = errorData.error as string;
+        }
+      } catch {
+        // If we can't parse the error response, use the default message
+      }
+
+      throw new Error(errorMessage);
     }
 
     const data: unknown = await response.json();
@@ -369,7 +385,23 @@ async function fetchLocationData(): Promise<LocationData> {
   const key = createRequestKey(IP_API_URL, {});
 
   return requestQueue.add(key, async () => {
-    return makeRequest<LocationData>(IP_API_URL);
+    try {
+      return await makeRequest<LocationData>(IP_API_URL);
+    } catch (error) {
+      // If we get a rate limit error, try to use a fallback location
+      if (error instanceof Error && error.message.includes('Rate limit')) {
+        logDevError('Rate limit hit for location service, using fallback location');
+        // Return a fallback location (London) to prevent complete failure
+        return {
+          latitude: 51.5074,
+          longitude: -0.1278,
+          city: 'London',
+          country_name: 'United Kingdom',
+          country_code: 'GB',
+        };
+      }
+      throw error;
+    }
   });
 }
 

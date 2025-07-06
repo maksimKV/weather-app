@@ -158,6 +158,8 @@ export const ERROR_MESSAGES = {
   LOCATION: {
     UNAVAILABLE: 'Location unavailable',
     DETERMINE_FAILED: 'Unable to determine your location. Please select a city manually.',
+    RATE_LIMIT:
+      'Location service is temporarily unavailable due to high traffic. Please try again in a few minutes.',
   },
   DATA: {
     INVALID_COUNTRY: 'Invalid country data received',
@@ -172,6 +174,7 @@ export const ERROR_MESSAGES = {
   GENERAL: {
     INIT_FAILED: 'Failed to initialize app',
     SEARCH_FAILED: 'Error searching cities',
+    RATE_LIMIT: 'Service temporarily unavailable due to high traffic. Please try again later.',
   },
 } as const;
 
