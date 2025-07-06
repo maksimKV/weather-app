@@ -1,7 +1,7 @@
 export const mockWeatherData = {
   temperature: 20,
   weathercode: 1,
-  time: '2024-01-01T12:00:00Z'
+  time: '2024-01-01T12:00:00Z',
 };
 
 export const mockForecastData = {
@@ -14,13 +14,13 @@ export const mockForecastData = {
     relative_humidity_2m_min: [60, 55, 65, 50, 45],
     sunrise: ['07:00', '07:01', '07:02', '07:03', '07:04'],
     sunset: ['17:00', '17:01', '17:02', '17:03', '17:04'],
-    uv_index_max: [3, 4, 2, 5, 6]
-  }
+    uv_index_max: [3, 4, 2, 5, 6],
+  },
 };
 
 export const mockWeatherWithIcon = {
   ...mockWeatherData,
-  icon: '/weather-icons/mainly-clear.svg'
+  icon: '/weather-icons/mainly-clear.svg',
 };
 
 export const mockForecastWithIcons = {
@@ -29,6 +29,6 @@ export const mockForecastWithIcons = {
     0: '/weather-icons/clear-day.svg',
     1: '/weather-icons/mainly-clear.svg',
     2: '/weather-icons/partly-cloudy.svg',
-    3: '/weather-icons/overcast.svg'
-  }
-}; 
+    3: '/weather-icons/overcast.svg',
+  },
+};

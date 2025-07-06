@@ -7,7 +7,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     globals: true,
-    exclude: ['e2e/**/*', '**/*.e2e.*'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.js'],
+    exclude: ['node_modules', 'dist', '.git', 'e2e/**/*', '**/*.e2e.*', 'static/'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
@@ -18,8 +19,8 @@ export default defineConfig({
         '**/*.config.*',
         'dist/',
         'static/',
-        'e2e/'
-      ]
-    }
-  }
-}); 
+        'e2e/',
+      ],
+    },
+  },
+});

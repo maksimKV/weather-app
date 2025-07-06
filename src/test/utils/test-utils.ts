@@ -27,4 +27,4 @@ export function mockWindowSize(width: number, height: number) {
     configurable: true,
     value: height,
   });
-} 
+}

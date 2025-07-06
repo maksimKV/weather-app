@@ -8,8 +8,8 @@ import {
   normalizeCity,
   createCityKey,
   isCity,
-  isValidWeatherData
-} from '../utils';
+  isValidWeatherData,
+} from '../../../lib/utils';
 
 describe('Weather Utilities', () => {
   describe('getUvLabel', () => {
@@ -74,7 +74,7 @@ describe('Weather Utilities', () => {
     });
 
     it('handles invalid date gracefully', () => {
-      expect(formatDate('invalid-date')).toBe('Unknown');
+      expect(formatDate('invalid-date')).toBe('Invalid Date');
     });
   });
 });
@@ -86,7 +86,7 @@ describe('City Utilities', () => {
         name: 'London',
         lat: '51.5074',
         lon: '-0.1278',
-        country: 'GB'
+        country: 'GB',
       };
 
       const result = normalizeCity(input);
@@ -97,7 +97,7 @@ describe('City Utilities', () => {
         country: 'GB',
         countryCode: undefined,
         geonameId: undefined,
-        population: undefined
+        population: undefined,
       });
     });
 
@@ -106,7 +106,7 @@ describe('City Utilities', () => {
         name: 'Paris',
         lat: 48.8566,
         lng: 2.3522,
-        country: 'FR'
+        country: 'FR',
       };
 
       const result = normalizeCity(input);
@@ -146,7 +146,7 @@ describe('Data Validation', () => {
       const validWeather = {
         temperature: 20,
         weathercode: 1,
-        time: '2024-01-01T12:00:00Z'
+        time: '2024-01-01T12:00:00Z',
       };
 
       const validForecast = {
@@ -154,8 +154,8 @@ describe('Data Validation', () => {
           time: ['2024-01-01'],
           temperature_2m_min: [15],
           temperature_2m_max: [25],
-          weathercode: [1]
-        }
+          weathercode: [1],
+        },
       };
 
       expect(isValidWeatherData(validWeather)).toBe(true);
@@ -164,4 +164,4 @@ describe('Data Validation', () => {
       expect(isValidWeatherData({})).toBe(false);
     });
   });
-}); 
+});

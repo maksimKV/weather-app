@@ -8,11 +8,11 @@ export const handlers = [
   http.get('https://api.open-meteo.com/v1/forecast', ({ request }) => {
     const url = new URL(request.url);
     const currentWeather = url.searchParams.get('current_weather');
-    
+
     if (currentWeather === 'true') {
       return HttpResponse.json({ current_weather: mockWeatherData });
     }
-    
+
     return HttpResponse.json(mockForecastData);
   }),
 
@@ -23,7 +23,7 @@ export const handlers = [
       longitude: -0.1278,
       city: 'London',
       country_name: 'United Kingdom',
-      country_code: 'GB'
+      country_code: 'GB',
     });
   }),
 
@@ -37,19 +37,19 @@ export const handlers = [
     const url = new URL(request.url);
     const countryCode = url.searchParams.get('countryCode');
     const search = url.searchParams.get('search');
-    
+
     if (search) {
-      const filteredCities = mockCities.filter(city => 
+      const filteredCities = mockCities.filter(city =>
         city.name.toLowerCase().includes(search.toLowerCase())
       );
       return HttpResponse.json(filteredCities.slice(0, 20));
     }
-    
+
     if (countryCode) {
       const countryCities = mockCities.filter(city => city.country === countryCode);
       return HttpResponse.json(countryCities);
     }
-    
+
     return HttpResponse.json(mockCities);
   }),
-]; 
+];
