@@ -27,7 +27,6 @@
 
   $: useCache = $citiesLoaded && $cities.length > CACHE_THRESHOLDS.CITIES_CACHE_MIN;
 
-  // Runtime validation
   if (selected !== null && !isCity(selected)) {
     logDevError('Invalid selected prop passed to CitySelector:', selected);
   }

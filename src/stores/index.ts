@@ -249,10 +249,10 @@ const initialAppState = loadFromStorage(PERSISTENCE_KEYS.APP_STATE, {
 function clearStaleCache() {
   try {
     if (typeof window === 'undefined') return;
-    
+
     const now = Date.now();
     const oneDayMs = 24 * 60 * 60 * 1000;
-    
+
     // Clear weather cache if it's older than 24 hours
     const weatherCacheData = localStorage.getItem(PERSISTENCE_KEYS.WEATHER_CACHE);
     if (weatherCacheData) {
@@ -266,10 +266,10 @@ function clearStaleCache() {
       } catch (e) {
         // If cache is corrupted, remove it
         localStorage.removeItem(PERSISTENCE_KEYS.WEATHER_CACHE);
-        logDevError('Cleared corrupted weather cache');
+        logDevError('Cleared corrupted weather cache', e);
       }
     }
-    
+
     // Clear app state if it's older than 24 hours
     const appStateData = localStorage.getItem(PERSISTENCE_KEYS.APP_STATE);
     if (appStateData) {
@@ -284,7 +284,7 @@ function clearStaleCache() {
       } catch (e) {
         // If state is corrupted, remove it
         localStorage.removeItem(PERSISTENCE_KEYS.APP_STATE);
-        logDevError('Cleared corrupted app state');
+        logDevError('Cleared corrupted app state', e);
         return; // Don't use corrupted state
       }
     }

@@ -41,12 +41,7 @@
   import { onMount, tick } from 'svelte';
   import type { City, Country } from '../lib/types';
   import { logDevError } from '../lib/utils';
-  import {
-    MAP_CONFIG,
-    ERROR_MESSAGES,
-    CACHE_THRESHOLDS,
-    ANIMATION_CONFIG,
-  } from '../lib/constants';
+  import { MAP_CONFIG, ERROR_MESSAGES, CACHE_THRESHOLDS, ANIMATION_CONFIG } from '../lib/constants';
 
   // Weather icons are available via WEATHER_ICONS import
 
@@ -294,31 +289,28 @@
   onMount(async () => {
     try {
       setupGlobalErrorHandlers();
-      
+
       // Clear any stale state on app initialization
       if (typeof window !== 'undefined') {
         const urlParams = new URLSearchParams(window.location.search);
         const clearCache = urlParams.get('clearCache');
-        
+
         if (clearCache === 'true' || import.meta.env.DEV) {
-          // In development or when explicitly requested, clear all cache
           actions.clearAllStorage();
           actions.resetApp();
           logDevError('Cache cleared on app initialization');
         }
       }
-      
+
       await initializeData();
 
-      // Prefetch weather for nearby cities if we have many cities
       setTimeout(() => {
         if (countryCities.length > CACHE_THRESHOLDS.PREFETCH_TRIGGER_COUNT) {
-          const nearbyCities = countryCities.slice(0, CACHE_THRESHOLDS.PREFETCH_CITY_COUNT); // Prefetch first 20 cities
+          const nearbyCities = countryCities.slice(0, CACHE_THRESHOLDS.PREFETCH_CITY_COUNT);
           prefetchWeatherForCities(nearbyCities);
         }
       }, 500);
 
-      // Try to get user's location forecast
       if (!cityManuallySelected) {
         getUserLocationForecast();
       }
@@ -327,19 +319,16 @@
     }
   });
 
-  // Reactively load forecast when selectedCity changes
   $: if ($selectedCity) {
     loadSelectedCityWeather();
     loadForecast();
   }
 
-  // Reactively load weather for cities when countryCities changes
   $: if (countryCities.length > 0 && $selectedCountry) {
     loadCityWeather();
 
-    // Background prefetching for nearby cities
     if (countryCities.length > 10) {
-      const nearbyCities = countryCities.slice(0, 20); // Prefetch first 20 cities
+      const nearbyCities = countryCities.slice(0, 20);
       prefetchWeatherForCities(nearbyCities);
     }
   }
@@ -354,17 +343,16 @@
 
 <main>
   <PerformanceMonitor />
-  
-  <!-- Cache notice for users experiencing issues -->
+
   {#if typeof window !== 'undefined' && $selectedCountry && !cityManuallySelected}
     <div class="cache-notice" in:fade>
       <p>
-        <strong>Having issues?</strong> If the map or selections seem stuck, 
+        <strong>Having issues?</strong> If the map or selections seem stuck,
         <a href="/clear-cache" target="_blank">clear the cache</a> to reset the app.
       </p>
     </div>
   {/if}
-  
+
   <ErrorBoundary>
     <div class="weather-title-wrapper">
       <span class="weather-icon-spin">
@@ -430,7 +418,6 @@
     {#if !$isSelectedCityGeolocated}
       <div class="forecast-section" in:fade>
         {#if $selectedCity && cityManuallySelected}
-          <!-- City selected - show forecast panel -->
           {#if loadingForecast}
             <div class="loading-message">
               <div class="loading-spinner"></div>
@@ -449,7 +436,6 @@
             </div>
           {/if}
         {:else if $selectedCountry && countryCities.length > 0}
-          <!-- Country selected but no city - show temperature chart -->
           <ErrorBoundary>
             <CountryWeatherChart
               cities={countryCities}
@@ -626,7 +612,7 @@
     font-size: 0.9em;
     color: #856404;
   }
-  
+
   .cache-notice {
     background: #e3f2fd;
     border: 1px solid #90caf9;
@@ -636,18 +622,18 @@
     text-align: center;
     font-size: 0.9em;
   }
-  
+
   .cache-notice p {
     margin: 0;
     color: #1976d2;
   }
-  
+
   .cache-notice a {
     color: #1565c0;
     text-decoration: underline;
     font-weight: 600;
   }
-  
+
   .cache-notice a:hover {
     color: #0d47a1;
   }

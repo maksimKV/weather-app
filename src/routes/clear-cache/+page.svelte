@@ -8,14 +8,11 @@
 
   onMount(async () => {
     try {
-      // Clear all cache and storage
       actions.clearAllStorage();
       actions.resetApp();
-      
-      // Wait a moment to ensure clearing is complete
+
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Reload the page to ensure fresh state
+
       window.location.href = '/';
     } catch (err) {
       logDevError('Error clearing cache:', err);
@@ -42,8 +39,8 @@
       <p>There was an error clearing the cache. Please try again or use browser developer tools.</p>
       <div class="actions">
         <button on:click={() => window.location.reload()}>Try Again</button>
-        <button on:click={() => window.location.href = '/'}>Go to Main App</button>
+        <button on:click={() => (window.location.href = '/')}>Go to Main App</button>
       </div>
     </div>
   {/if}
-</main> 
+</main>

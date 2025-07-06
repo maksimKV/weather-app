@@ -40,8 +40,7 @@
       actions.resetApp();
       updateStats();
       console.log('All cache cleared successfully');
-      
-      // Reload the page after clearing cache
+
       setTimeout(() => {
         window.location.reload();
       }, 500);
@@ -122,9 +121,7 @@
       </div>
 
       <div class="cache-controls">
-        <button class="clear-cache-btn" on:click={clearAllCache}>
-          Clear All Cache
-        </button>
+        <button class="clear-cache-btn" on:click={clearAllCache}> Clear All Cache </button>
       </div>
     </div>
   {/if}

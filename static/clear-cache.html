@@ -1,68 +1,68 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Clear Weather App Cache</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            text-align: center;
-        }
-        .button {
-            background: #007bff;
-            color: white;
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 10px;
-            text-decoration: none;
-            display: inline-block;
-        }
-        .button:hover {
-            background: #0056b3;
-        }
-        .warning {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 15px;
-            border-radius: 6px;
-            margin: 20px 0;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+        text-align: center;
+      }
+      .button {
+        background: #007bff;
+        color: white;
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        margin: 10px;
+        text-decoration: none;
+        display: inline-block;
+      }
+      .button:hover {
+        background: #0056b3;
+      }
+      .warning {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 20px 0;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Weather App Cache Management</h1>
-    
+
     <div class="warning">
-        <strong>⚠️ Warning:</strong> This will clear all cached data including:
-        <ul style="text-align: left; display: inline-block;">
-            <li>Selected countries and cities</li>
-            <li>Weather data cache</li>
-            <li>Map positions and zoom levels</li>
-            <li>User preferences</li>
-        </ul>
+      <strong>⚠️ Warning:</strong> This will clear all cached data including:
+      <ul style="text-align: left; display: inline-block">
+        <li>Selected countries and cities</li>
+        <li>Weather data cache</li>
+        <li>Map positions and zoom levels</li>
+        <li>User preferences</li>
+      </ul>
     </div>
-    
+
     <p>Click the button below to clear all cache and reset the app to its initial state:</p>
-    
+
     <a href="/?clearCache=true" class="button">Clear All Cache & Reset App</a>
-    
+
     <p><small>This will redirect you to the main app with cache clearing enabled.</small></p>
-    
+
     <script>
-        // Auto-redirect after 5 seconds if no action taken
-        setTimeout(() => {
-            if (confirm('Redirect to main app without clearing cache?')) {
-                window.location.href = '/';
-            }
-        }, 5000);
+      // Auto-redirect after 5 seconds if no action taken
+      setTimeout(() => {
+        if (confirm('Redirect to main app without clearing cache?')) {
+          window.location.href = '/';
+        }
+      }, 5000);
     </script>
-</body>
-</html> 
+  </body>
+</html>

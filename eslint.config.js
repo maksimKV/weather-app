@@ -58,6 +58,7 @@ export default [
         CustomEvent: 'readonly',
         HTMLDivElement: 'readonly',
         HTMLCanvasElement: 'readonly',
+        URLSearchParams: 'readonly',
       },
     },
     plugins: {
@@ -126,6 +127,7 @@ export default [
         CustomEvent: 'readonly',
         HTMLDivElement: 'readonly',
         HTMLCanvasElement: 'readonly',
+        URLSearchParams: 'readonly',
       },
     },
     plugins: {
