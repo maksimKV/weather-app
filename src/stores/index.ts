@@ -245,15 +245,67 @@ const initialAppState = loadFromStorage(PERSISTENCE_KEYS.APP_STATE, {
   selectedCity: null,
 });
 
+// Clear stale cache on app initialization (older than 24 hours)
+function clearStaleCache() {
+  try {
+    if (typeof window === 'undefined') return;
+    
+    const now = Date.now();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    
+    // Clear weather cache if it's older than 24 hours
+    const weatherCacheData = localStorage.getItem(PERSISTENCE_KEYS.WEATHER_CACHE);
+    if (weatherCacheData) {
+      try {
+        const cache = JSON.parse(weatherCacheData);
+        const cacheAge = now - (cache._timestamp || 0);
+        if (cacheAge > oneDayMs) {
+          localStorage.removeItem(PERSISTENCE_KEYS.WEATHER_CACHE);
+          logDevError('Cleared stale weather cache');
+        }
+      } catch (e) {
+        // If cache is corrupted, remove it
+        localStorage.removeItem(PERSISTENCE_KEYS.WEATHER_CACHE);
+        logDevError('Cleared corrupted weather cache');
+      }
+    }
+    
+    // Clear app state if it's older than 24 hours
+    const appStateData = localStorage.getItem(PERSISTENCE_KEYS.APP_STATE);
+    if (appStateData) {
+      try {
+        const state = JSON.parse(appStateData);
+        const stateAge = now - (state._timestamp || 0);
+        if (stateAge > oneDayMs) {
+          localStorage.removeItem(PERSISTENCE_KEYS.APP_STATE);
+          logDevError('Cleared stale app state');
+          return; // Don't use stale state
+        }
+      } catch (e) {
+        // If state is corrupted, remove it
+        localStorage.removeItem(PERSISTENCE_KEYS.APP_STATE);
+        logDevError('Cleared corrupted app state');
+        return; // Don't use corrupted state
+      }
+    }
+  } catch (error) {
+    logDevError('Error clearing stale cache:', error);
+  }
+}
+
+// Clear stale cache on initialization
+clearStaleCache();
+
 selectedCountry.set(initialAppState.selectedCountry);
 selectedCity.set(initialAppState.selectedCity);
 
-// Persist app state changes
+// Persist app state changes with timestamp
 selectedCountry.subscribe(value => {
   const current = get(selectedCity);
   saveToStorage(PERSISTENCE_KEYS.APP_STATE, {
     selectedCountry: value,
     selectedCity: current,
+    _timestamp: Date.now(),
   });
 });
 
@@ -262,12 +314,16 @@ selectedCity.subscribe(value => {
   saveToStorage(PERSISTENCE_KEYS.APP_STATE, {
     selectedCountry: current,
     selectedCity: value,
+    _timestamp: Date.now(),
   });
 });
 
-// Persist weather cache
+// Persist weather cache with timestamp
 weatherCache.subscribe(value => {
-  saveToStorage(PERSISTENCE_KEYS.WEATHER_CACHE, value);
+  saveToStorage(PERSISTENCE_KEYS.WEATHER_CACHE, {
+    ...value,
+    _timestamp: Date.now(),
+  });
 });
 
 // ============================================================================
@@ -358,6 +414,17 @@ export const actions = {
     }
   },
 
+  clearAllStorage: () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(PERSISTENCE_KEYS.APP_STATE);
+      localStorage.removeItem(PERSISTENCE_KEYS.WEATHER_CACHE);
+      localStorage.removeItem(PERSISTENCE_KEYS.COUNTRIES);
+      localStorage.removeItem(PERSISTENCE_KEYS.CITIES);
+      sessionStorage.removeItem('countries');
+      sessionStorage.removeItem('cities');
+    }
+  },
+
   // Loading Actions
   setLoading: (key: keyof LoadingState, value: boolean) => {
     loading.update(state => ({ ...state, [key]: value }));
@@ -393,6 +460,7 @@ export const actions = {
       country_code: '',
     });
     actions.clearErrors();
+    actions.clearAllStorage();
   },
 
   resetWeather: () => {

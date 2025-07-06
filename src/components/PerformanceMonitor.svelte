@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { getCacheStats } from '../lib/services/weatherService';
   import { getDataCacheStats } from '../lib/services/dataService';
+  import { actions } from '../stores';
   import type { CacheStats, DataCacheStats } from '../lib/types';
   import { logDevError } from '../lib/utils';
 
@@ -31,6 +32,17 @@
 
   function toggleVisibility() {
     isVisible = !isVisible;
+  }
+
+  function clearAllCache() {
+    try {
+      actions.clearAllStorage();
+      actions.resetApp();
+      updateStats();
+      console.log('All cache cleared successfully');
+    } catch (error) {
+      logDevError('Error clearing cache:', error);
+    }
   }
 
   onMount(() => {
@@ -103,6 +115,12 @@
           <span>{dataStats.requestStats?.running || 0}</span>
         </div>
       </div>
+
+      <div class="cache-controls">
+        <button class="clear-cache-btn" on:click={clearAllCache}>
+          Clear All Cache
+        </button>
+      </div>
     </div>
   {/if}
 </div>
@@ -164,6 +182,22 @@
   .stat-row span:last-child {
     font-weight: 600;
     color: var(--primary);
+  }
+
+  .cache-controls {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+  }
+
+  .clear-cache-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
   }
 
   @media (max-width: 767px) {

@@ -294,6 +294,20 @@
   onMount(async () => {
     try {
       setupGlobalErrorHandlers();
+      
+      // Clear any stale state on app initialization
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const clearCache = urlParams.get('clearCache');
+        
+        if (clearCache === 'true' || import.meta.env.DEV) {
+          // In development or when explicitly requested, clear all cache
+          actions.clearAllStorage();
+          actions.resetApp();
+          logDevError('Cache cleared on app initialization');
+        }
+      }
+      
       await initializeData();
 
       // Prefetch weather for nearby cities if we have many cities
