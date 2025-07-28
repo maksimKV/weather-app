@@ -272,6 +272,17 @@
         longitude: locationResult.longitude,
         country_code: locationResult.country_code,
       });
+
+      // Set the geolocated city to enable duplicate detection
+      // This will hide the forecast section if the same location is manually selected
+      const geolocatedCityData = normalizeCity({
+        name: locationResult.location.replace(/[\u{1F4CD}\u{1F310}\u{26A0}\u{FE0F}]\s*/gu, ''), // Remove location method icons
+        lat: locationResult.latitude,
+        lon: locationResult.longitude,
+        country: locationResult.country,
+        countryCode: locationResult.country_code || '',
+      });
+      actions.setGeolocatedCity(geolocatedCityData);
     } catch (error) {
       logDevError('Error detecting user location for forecast:', error);
 
@@ -287,6 +298,9 @@
         country: 'Unknown',
         error: errorMessage,
       });
+
+      // Clear geolocated city when location detection fails
+      actions.setGeolocatedCity(null);
     } finally {
       actions.setLoading('location', false);
     }

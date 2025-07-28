@@ -344,6 +344,10 @@ export const actions = {
     selectedCountry.set(null); // Clear country when city changes
   },
 
+  setGeolocatedCity: (city: City | null) => {
+    geolocatedCity.set(city);
+  },
+
   // Data Loading Actions
   setCountries: (countriesData: Country[]) => {
     countries.set(countriesData);

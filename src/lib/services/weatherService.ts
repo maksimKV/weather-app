@@ -55,6 +55,8 @@ export interface LocationData {
   city?: string;
   country_name?: string;
   country_code?: string;
+  timestamp?: number;
+  method?: 'browser' | 'ip' | 'fallback';
 }
 
 export interface WeatherServiceError {
@@ -381,7 +383,89 @@ async function fetchForecastRaw(lat: number, lon: number): Promise<Forecast | nu
   });
 }
 
-async function fetchLocationData(): Promise<LocationData> {
+// Browser geolocation function (most accurate)
+async function fetchBrowserLocation(): Promise<LocationData | null> {
+  return new Promise(resolve => {
+    // Check if we're in browser environment and geolocation is available
+    if (
+      typeof window === 'undefined' ||
+      typeof navigator === 'undefined' ||
+      !navigator.geolocation
+    ) {
+      logDevError('Browser geolocation not available');
+      resolve(null);
+      return;
+    }
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 15000, // 15 seconds
+      maximumAge: 5 * 60 * 1000, // 5 minutes
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      async position => {
+        try {
+          const { latitude, longitude } = position.coords;
+
+          // Use reverse geocoding to get city/country info
+          const locationInfo = await reverseGeocode(latitude, longitude);
+
+          resolve({
+            latitude,
+            longitude,
+            city: locationInfo.city || 'Your Location',
+            country_name: locationInfo.country || 'Unknown',
+            country_code: locationInfo.country_code || 'XX',
+          });
+        } catch (error) {
+          logDevError('Error processing browser location:', error);
+          resolve(null);
+        }
+      },
+      error => {
+        logDevError('Browser geolocation error:', error.message);
+        resolve(null);
+      },
+      options
+    );
+  });
+}
+
+// Reverse geocoding to get location info from coordinates
+async function reverseGeocode(
+  lat: number,
+  lon: number
+): Promise<{
+  city?: string;
+  country?: string;
+  country_code?: string;
+}> {
+  try {
+    // Use a simple reverse geocoding service
+    const response = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`
+    );
+
+    if (!response.ok) {
+      throw new Error('Reverse geocoding failed');
+    }
+
+    const data = await response.json();
+
+    return {
+      city: data.city || data.locality || data.principalSubdivision,
+      country: data.countryName,
+      country_code: data.countryCode,
+    };
+  } catch (error) {
+    logDevError('Reverse geocoding error:', error);
+    return {};
+  }
+}
+
+// IP-based location (fallback)
+async function fetchIPLocation(): Promise<LocationData> {
   const key = createRequestKey(IP_API_URL, {});
 
   return requestQueue.add(key, async () => {
@@ -395,7 +479,7 @@ async function fetchLocationData(): Promise<LocationData> {
         return {
           latitude: 51.5074,
           longitude: -0.1278,
-          city: 'London',
+          city: 'London (Fallback)',
           country_name: 'United Kingdom',
           country_code: 'GB',
         };
@@ -403,6 +487,24 @@ async function fetchLocationData(): Promise<LocationData> {
       throw error;
     }
   });
+}
+
+// Hybrid location function - tries browser first, then IP
+async function fetchLocationData(): Promise<LocationData> {
+  try {
+    // First, try browser geolocation (most accurate)
+    const browserLocation = await fetchBrowserLocation();
+    if (browserLocation) {
+      logDevError('Using browser geolocation (precise)');
+      return browserLocation;
+    }
+  } catch (error) {
+    logDevError('Browser geolocation failed, falling back to IP:', error);
+  }
+
+  // Fallback to IP-based location
+  logDevError('Using IP-based geolocation (approximate)');
+  return await fetchIPLocation();
 }
 
 // ============================================================================
@@ -534,17 +636,40 @@ export async function getLocationForecast(): Promise<{
   latitude: number;
   longitude: number;
   country_code?: string;
+  locationMethod?: 'browser' | 'ip' | 'fallback';
 } | null> {
   try {
-    // Check memoization cache
-    const memoizedLocation = locationMemoCache.get('ip_location');
+    // Check if we have a cached location (shorter cache for better accuracy)
+    const cacheKey = 'user_location';
+    const memoizedLocation = locationMemoCache.get(cacheKey);
     let locationData: LocationData;
+    let locationMethod: 'browser' | 'ip' | 'fallback' = 'ip';
 
-    if (memoizedLocation) {
+    if (memoizedLocation && Date.now() - (memoizedLocation.timestamp || 0) < 5 * 60 * 1000) {
+      // Use cached location if less than 5 minutes old
       locationData = memoizedLocation;
+      locationMethod = memoizedLocation.method || 'ip';
     } else {
+      // Fetch fresh location data using hybrid approach
       locationData = await fetchLocationData();
-      locationMemoCache.set('ip_location', locationData);
+
+      // Determine which method was used based on the response
+      if (locationData.city && !locationData.city.includes('(Fallback)')) {
+        // Check if coordinates seem precise (browser geolocation typically has more decimal places)
+        const hasHighPrecision =
+          locationData.latitude.toString().split('.')[1]?.length > 4 ||
+          locationData.longitude.toString().split('.')[1]?.length > 4;
+        locationMethod = hasHighPrecision ? 'browser' : 'ip';
+      } else {
+        locationMethod = 'fallback';
+      }
+
+      // Cache with timestamp and method info
+      locationMemoCache.set(cacheKey, {
+        ...locationData,
+        timestamp: Date.now(),
+        method: locationMethod,
+      });
     }
 
     if (!locationData.latitude || !locationData.longitude) {
@@ -554,13 +679,24 @@ export async function getLocationForecast(): Promise<{
     const forecast = await fetchForecastRaw(locationData.latitude, locationData.longitude);
     if (!forecast) return null;
 
+    // Create more descriptive location labels
+    let locationLabel = locationData.city || 'Your Location';
+    if (locationMethod === 'browser') {
+      locationLabel = `📍 ${locationLabel}`; // GPS icon for precise location
+    } else if (locationMethod === 'ip') {
+      locationLabel = `🌐 ${locationLabel} (Approximate)`; // Globe icon for IP location
+    } else if (locationMethod === 'fallback') {
+      locationLabel = `⚠️ ${locationLabel}`; // Warning icon for fallback
+    }
+
     return {
       forecast: addForecastIcons(forecast),
-      location: locationData.city || 'Your Location (Approximate)',
+      location: locationLabel,
       country: locationData.country_name || '',
       latitude: locationData.latitude,
       longitude: locationData.longitude,
       country_code: locationData.country_code,
+      locationMethod,
     };
   } catch (_error) {
     logDevError('Error fetching forecast:', _error);

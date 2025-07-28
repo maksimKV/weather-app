@@ -102,6 +102,38 @@
         {location}{country ? `, ${country}` : ''}
       </button>
     </div>
+
+    <!-- Location method info -->
+    {#if location.includes('📍')}
+      <div class="location-info precise">
+        <span class="info-icon">✅</span>
+        <span>Precise location from your device's GPS/WiFi</span>
+      </div>
+    {:else if location.includes('🌐')}
+      <div class="location-info approximate">
+        <span class="info-icon">ℹ️</span>
+        <span>Approximate location based on your internet connection</span>
+        <button
+          class="refresh-btn"
+          on:click={() => window.location.reload()}
+          title="Refresh to try precise location"
+        >
+          🔄 Try precise location
+        </button>
+      </div>
+    {:else if location.includes('⚠️')}
+      <div class="location-info fallback">
+        <span class="info-icon">⚠️</span>
+        <span>Using fallback location - location services unavailable</span>
+        <button
+          class="refresh-btn"
+          on:click={() => window.location.reload()}
+          title="Refresh to retry location"
+        >
+          🔄 Retry location
+        </button>
+      </div>
+    {/if}
     <div class="forecast-panel">
       {#each forecast.daily?.time?.slice(0, daysToShow) || [] as date, i}
         <WeatherCard
@@ -177,6 +209,58 @@
   .pin-icon {
     margin-right: 0.3em;
     color: var(--accent, #007bff);
+  }
+
+  .location-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5em;
+    margin: 0.5em 0;
+    padding: 0.5em;
+    border-radius: 6px;
+    font-size: 0.9em;
+    text-align: center;
+    flex-wrap: wrap;
+  }
+
+  .location-info.precise {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  .location-info.approximate {
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+  }
+
+  .location-info.fallback {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  .info-icon {
+    font-size: 1.1em;
+  }
+
+  .refresh-btn {
+    background: none;
+    border: 1px solid currentColor;
+    color: inherit;
+    padding: 0.2em 0.5em;
+    border-radius: 4px;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-left: 0.5em;
+  }
+
+  .refresh-btn:hover {
+    background: currentColor;
+    color: white;
   }
   .forecast-panel {
     display: grid;
