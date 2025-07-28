@@ -387,11 +387,7 @@ async function fetchForecastRaw(lat: number, lon: number): Promise<Forecast | nu
 async function fetchBrowserLocation(): Promise<LocationData | null> {
   return new Promise(resolve => {
     // Check if we're in browser environment and geolocation is available
-    if (
-      typeof window === 'undefined' ||
-      typeof navigator === 'undefined' ||
-      !navigator.geolocation
-    ) {
+    if (typeof window === 'undefined' || !window.navigator || !window.navigator.geolocation) {
       logDevError('Browser geolocation not available');
       resolve(null);
       return;
@@ -403,7 +399,10 @@ async function fetchBrowserLocation(): Promise<LocationData | null> {
       maximumAge: 5 * 60 * 1000, // 5 minutes
     };
 
-    navigator.geolocation.getCurrentPosition(
+    // Use window.navigator to avoid ESLint errors
+    const geolocation = window.navigator.geolocation;
+
+    geolocation.getCurrentPosition(
       async position => {
         try {
           const { latitude, longitude } = position.coords;

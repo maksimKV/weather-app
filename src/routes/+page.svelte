@@ -276,7 +276,7 @@
       // Set the geolocated city to enable duplicate detection
       // This will hide the forecast section if the same location is manually selected
       const geolocatedCityData = normalizeCity({
-        name: locationResult.location.replace(/[\u{1F4CD}\u{1F310}\u{26A0}\u{FE0F}]\s*/gu, ''), // Remove location method icons
+        name: locationResult.location.replace(/^(📍|🌐|⚠️)\s*/, ''), // Remove location method icons
         lat: locationResult.latitude,
         lon: locationResult.longitude,
         country: locationResult.country,
